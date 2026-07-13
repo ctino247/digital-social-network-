@@ -9,38 +9,59 @@ $currentPath = $_SERVER['REQUEST_URI'] ?? '/';
 
 <!-- Floating Action Button for Creating Posts (Mobile Only) -->
 <?php if ($currentUser): ?>
-    <a href="/post/create" class="md:hidden fixed bottom-24 right-4 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-40">
-        <span class="material-symbols-outlined" style="font-size: 28px;">add</span>
+    <a href="/post/create" class="md:hidden fixed bottom-28 right-6 w-14 h-14 bg-[#004D40] text-[#FFE500] rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-40 border border-[#004D40]/20">
+        <span class="material-symbols-outlined font-bold" style="font-size: 28px;">add</span>
     </a>
 <?php endif; ?>
 
-<!-- Bottom Navigation Bar (Mobile Only) -->
-<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-6 pb-safe h-20 bg-surface-container-low/95 backdrop-blur-2xl border-t border-white/5 shadow-lg">
-    <a class="flex flex-col items-center justify-center <?= $currentPath === '/' ? 'text-primary bg-primary/10 rounded-full p-2 scale-95' : 'text-on-surface-variant/60 hover:text-primary' ?> transition-all duration-300" href="/">
+<!-- Bottom Navigation Bar (Mobile Only - styled exactly like the attached design mockup) -->
+<nav class="md:hidden fixed bottom-4 left-4 right-4 z-50 h-20 bg-[#004D40] rounded-3xl shadow-xl flex justify-around items-center px-4 border border-[#004D40]/30">
+    <!-- Home Feed Tab -->
+    <a class="flex items-center justify-center transition-all duration-300 <?= $currentPath === '/' ? 'bg-[#FFE500] text-[#004D40] px-5 py-2.5 rounded-full font-bold shadow-md scale-105' : 'text-white/70 hover:text-white' ?>" href="/">
         <span class="material-symbols-outlined" style="<?= $currentPath === '/' ? "font-variation-settings: 'FILL' 1;" : "" ?>">home</span>
-        <span class="font-label-md text-label-md sr-only">Home</span>
+        <?php if ($currentPath === '/'): ?>
+            <span class="text-xs ml-2 font-bold">Home</span>
+        <?php endif; ?>
     </a>
-    <a class="flex flex-col items-center justify-center <?= strpos($currentPath, '/explore') !== false ? 'text-primary bg-primary/10 rounded-full p-2 scale-95' : 'text-on-surface-variant/60 hover:text-primary' ?> transition-colors" href="/explore">
+
+    <!-- Explore Tab -->
+    <a class="flex items-center justify-center transition-all duration-300 <?= strpos($currentPath, '/explore') !== false ? 'bg-[#FFE500] text-[#004D40] px-5 py-2.5 rounded-full font-bold shadow-md scale-105' : 'text-white/70 hover:text-white' ?>" href="/explore">
         <span class="material-symbols-outlined" style="<?= strpos($currentPath, '/explore') !== false ? "font-variation-settings: 'FILL' 1;" : "" ?>">explore</span>
-        <span class="font-label-md text-label-md sr-only">Explore</span>
+        <?php if (strpos($currentPath, '/explore') !== false): ?>
+            <span class="text-xs ml-2 font-bold">Explore</span>
+        <?php endif; ?>
     </a>
-    <a class="flex flex-col items-center justify-center <?= strpos($currentPath, '/marketplace') !== false ? 'text-primary bg-primary/10 rounded-full p-2 scale-95' : 'text-on-surface-variant/60 hover:text-primary' ?> transition-colors" href="/marketplace">
+
+    <!-- Marketplace Tab -->
+    <a class="flex items-center justify-center transition-all duration-300 <?= strpos($currentPath, '/marketplace') !== false ? 'bg-[#FFE500] text-[#004D40] px-5 py-2.5 rounded-full font-bold shadow-md scale-105' : 'text-white/70 hover:text-white' ?>" href="/marketplace">
         <span class="material-symbols-outlined" style="<?= strpos($currentPath, '/marketplace') !== false ? "font-variation-settings: 'FILL' 1;" : "" ?>">shopping_bag</span>
-        <span class="font-label-md text-label-md sr-only">Shop</span>
+        <?php if (strpos($currentPath, '/marketplace') !== false): ?>
+            <span class="text-xs ml-2 font-bold">Shop</span>
+        <?php endif; ?>
     </a>
-    <a class="flex flex-col items-center justify-center <?= strpos($currentPath, '/notifications') !== false ? 'text-primary bg-primary/10 rounded-full p-2 scale-95' : 'text-on-surface-variant/60 hover:text-primary' ?> transition-colors" href="/notifications">
+
+    <!-- Notifications Tab -->
+    <a class="flex items-center justify-center transition-all duration-300 <?= strpos($currentPath, '/notifications') !== false ? 'bg-[#FFE500] text-[#004D40] px-5 py-2.5 rounded-full font-bold shadow-md scale-105' : 'text-white/70 hover:text-white' ?>" href="/notifications">
         <span class="material-symbols-outlined" style="<?= strpos($currentPath, '/notifications') !== false ? "font-variation-settings: 'FILL' 1;" : "" ?>">notifications</span>
-        <span class="font-label-md text-label-md sr-only">Notifications</span>
+        <?php if (strpos($currentPath, '/notifications') !== false): ?>
+            <span class="text-xs ml-2 font-bold">Alerts</span>
+        <?php endif; ?>
     </a>
+
+    <!-- Profile/Login Tab -->
     <?php if ($currentUser): ?>
-        <a class="flex flex-col items-center justify-center <?= strpos($currentPath, '/profile/' . $currentUser['username']) !== false ? 'text-primary bg-primary/10 rounded-full p-2 scale-95' : 'text-on-surface-variant/60 hover:text-primary' ?> transition-colors" href="/profile/<?= Security::e($currentUser['username']) ?>">
+        <a class="flex items-center justify-center transition-all duration-300 <?= strpos($currentPath, '/profile/' . $currentUser['username']) !== false ? 'bg-[#FFE500] text-[#004D40] px-5 py-2.5 rounded-full font-bold shadow-md scale-105' : 'text-white/70 hover:text-white' ?>" href="/profile/<?= Security::e($currentUser['username']) ?>">
             <span class="material-symbols-outlined" style="<?= strpos($currentPath, '/profile/' . $currentUser['username']) !== false ? "font-variation-settings: 'FILL' 1;" : "" ?>">person</span>
-            <span class="font-label-md text-label-md sr-only">Profile</span>
+            <?php if (strpos($currentPath, '/profile/' . $currentUser['username']) !== false): ?>
+                <span class="text-xs ml-2 font-bold">Me</span>
+            <?php endif; ?>
         </a>
     <?php else: ?>
-        <a class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary transition-colors" href="/auth/login">
+        <a class="flex items-center justify-center transition-all duration-300 <?= strpos($currentPath, '/auth/login') !== false ? 'bg-[#FFE500] text-[#004D40] px-5 py-2.5 rounded-full font-bold shadow-md scale-105' : 'text-white/70 hover:text-white' ?>" href="/auth/login">
             <span class="material-symbols-outlined">login</span>
-            <span class="font-label-md text-label-md sr-only">Login</span>
+            <?php if (strpos($currentPath, '/auth/login') !== false): ?>
+                <span class="text-xs ml-2 font-bold">Login</span>
+            <?php endif; ?>
         </a>
     <?php endif; ?>
 </nav>
