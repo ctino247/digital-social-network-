@@ -140,4 +140,24 @@ class Product extends Model
         );
         return !empty($order);
     }
+
+    /**
+     * Log a recommendation tracking event
+     */
+    public function trackRecommendationEvent(int $referralLinkId, string $eventType): void
+    {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
+        $this->query(
+            "INSERT INTO recommendation_events (referral_link_id, event_type, ip_address, user_agent)
+             VALUES (:link_id, :event_type, :ip, :ua)",
+            [
+                'link_id'    => $referralLinkId,
+                'event_type' => $eventType,
+                'ip'         => $ip,
+                'ua'         => $ua
+            ]
+        );
+    }
 }

@@ -97,6 +97,10 @@ $currentPath = $_SERVER['REQUEST_URI'] ?? '/';
                 <span class="material-symbols-outlined" style="<?= strpos($currentPath, '/profile/' . $currentUser['username']) !== false ? "font-variation-settings: 'FILL' 1;" : "" ?>">person</span>
                 <span class="font-semibold">Profile</span>
             </a>
+            <a class="flex items-center space-x-4 p-3 rounded-full transition-all <?= strpos($currentPath, '/wallet') !== false ? 'bg-primary-container/10 text-primary' : 'text-on-surface-variant/75 hover:text-primary' ?>" href="/wallet">
+                <span class="material-symbols-outlined" style="<?= strpos($currentPath, '/wallet') !== false ? "font-variation-settings: 'FILL' 1;" : "" ?>">account_balance_wallet</span>
+                <span class="font-semibold">My Wallet</span>
+            </a>
 
             <!-- Dynamic Role Based Links -->
             <?php if (in_array($currentUser['role'], ['creator', 'admin'])): ?>

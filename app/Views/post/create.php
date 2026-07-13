@@ -24,6 +24,22 @@ include ROOT_PATH . '/app/Views/partials/header.php';
                 </div>
             <?php endif; ?>
 
+            <?php if (isset($recommendProduct) && $recommendProduct): ?>
+                <input type="hidden" name="product_id" value="<?= (int)$recommendProduct['id'] ?>"/>
+                <input type="hidden" name="referral_code" value="<?= Security::e($refCode) ?>"/>
+                <!-- Recommendation preview -->
+                <div class="p-4 rounded-2xl bg-primary/5 border border-primary/20 mb-4 space-y-2">
+                    <p class="text-[10px] font-bold text-primary uppercase tracking-wider">Recommending Product:</p>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="text-xs font-bold text-white"><?= Security::e($recommendProduct['name']) ?></h4>
+                            <p class="text-[10px] text-gray-400">By @<?= Security::e($recommendProduct['creator_username']) ?></p>
+                        </div>
+                        <span class="text-xs font-bold text-primary">$<?= number_format($recommendProduct['price'], 2) ?></span>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <!-- Content Area -->
             <div>
                 <label for="post-content" class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Your message (Max 500 characters)</label>

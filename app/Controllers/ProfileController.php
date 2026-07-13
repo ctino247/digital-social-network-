@@ -54,6 +54,13 @@ class ProfileController extends Controller
             ]
         );
 
+        // Fetch products card info for each post if product_id exists
+        foreach ($posts as &$post) {
+            if ($post['product_id']) {
+                $post['product'] = (new \App\Models\Post())->getProductCardDetails((int)$post['product_id']);
+            }
+        }
+
         // Retrieve products if they are creator or admin
         $products = [];
         if (in_array($profileUser['role'], ['creator', 'admin'])) {
@@ -66,6 +73,58 @@ class ProfileController extends Controller
                 ['creator_id' => $profileUser['id']]
             );
         }
+
+        // Fetch creator metrics (Average Rating, total reviews)
+        $avgRating = 5.0;
+        $totalReviews = 0;
+        if (in_array($profileUser['role'], ['creator', 'admin'])) {
+            $metrics = $this->userModel->fetch(
+                "SELECT AVG(r.rating) as avg, COUNT(r.id) as qty
+                 FROM product_reviews r
+                 JOIN products p ON r.product_id = p.id
+                 WHERE p.creator_id = :id",
+                ['id' => $profileUser['id']]
+            );
+            $avgRating = $metrics['avg'] ? (float)$metrics['avg'] : 5.0;
+            $totalReviews = (int)($metrics['qty'] ?? 0);
+        }
+
+        // Fetch Recommendation Feed posts (posts they shared recommending a product)
+        $recommendationFeed = $this->userModel->fetchAll(
+            "SELECT p.*, u.username, u.full_name, u.avatar_url,
+                    (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likes_count,
+                    (SELECT COUNT(*) FROM posts WHERE parent_id = p.id) as replies_count,
+                    (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id AND user_id = :curr1) as is_liked,
+                    (SELECT COUNT(*) FROM post_bookmarks WHERE post_id = p.id AND user_id = :curr2) as is_bookmarked
+             FROM posts p
+             JOIN users u ON p.user_id = u.id
+             WHERE p.user_id = :user_id AND p.product_id IS NOT NULL AND p.parent_id IS NULL
+             ORDER BY p.created_at DESC",
+            [
+                'curr1'   => $currentUserId ?? 0,
+                'curr2'   => $currentUserId ?? 0,
+                'user_id' => $profileUser['id']
+            ]
+        );
+        foreach ($recommendationFeed as &$recPost) {
+            $recPost['product'] = (new \App\Models\Post())->getProductCardDetails((int)$recPost['product_id']);
+        }
+
+        // Fetch list of products they have recommended (referral_links)
+        $recommendedProducts = $this->userModel->fetchAll(
+            "SELECT p.*, c.name as category_name, u.username as creator_username
+             FROM referral_links r
+             JOIN products p ON r.product_id = p.id
+             JOIN categories c ON p.category_id = c.id
+             JOIN users u ON p.creator_id = u.id
+             WHERE r.user_id = :user_id AND p.status = 'active'
+             ORDER BY r.created_at DESC",
+            ['user_id' => $profileUser['id']]
+        );
+
+        // Fetch list of followers / following for direct tabs display
+        $followersList = $this->userModel->getFollowers((int)$profileUser['id']);
+        $followingList = $this->userModel->getFollowing((int)$profileUser['id']);
 
         // Wallet details (only if own profile)
         $wallet = null;
@@ -90,18 +149,24 @@ class ProfileController extends Controller
         }
 
         $this->view('profile.index', [
-            'profileUser'        => $profileUser,
-            'isOwnProfile'       => $isOwnProfile,
-            'isFollowing'        => $isFollowing,
-            'followersCount'     => $followersCount,
-            'followingCount'     => $followingCount,
-            'posts'              => $posts,
-            'products'           => $products,
-            'wallet'             => $wallet,
-            'transactions'       => $transactions,
-            'creatorApplication' => $creatorApplication,
-            'withdrawalHistory'  => $withdrawalHistory,
-            'csrf_token'         => $this->session->generateCsrfToken()
+            'profileUser'         => $profileUser,
+            'isOwnProfile'        => $isOwnProfile,
+            'isFollowing'         => $isFollowing,
+            'followersCount'      => $followersCount,
+            'followingCount'      => $followingCount,
+            'posts'               => $posts,
+            'products'            => $products,
+            'avgRating'           => $avgRating,
+            'totalReviews'        => $totalReviews,
+            'recommendationFeed'  => $recommendationFeed,
+            'recommendedProducts' => $recommendedProducts,
+            'followersList'       => $followersList,
+            'followingList'       => $followingList,
+            'wallet'              => $wallet,
+            'transactions'        => $transactions,
+            'creatorApplication'  => $creatorApplication,
+            'withdrawalHistory'   => $withdrawalHistory,
+            'csrf_token'          => $this->session->generateCsrfToken()
         ]);
     }
 
@@ -264,23 +329,39 @@ class ProfileController extends Controller
         $wallet = $this->userModel->getWallet($userId);
         $balance = $wallet ? (float)$wallet['balance'] : 0.00;
 
-        // Fetch min withdrawal setting
-        $settings = $this->userModel->fetch("SELECT min_withdrawal_amount FROM commission_settings WHERE id = 1");
+        // Fetch settings
+        $settings = $this->userModel->fetch("SELECT * FROM commission_settings WHERE id = 1");
         $minWithdrawal = (float)($settings['min_withdrawal_amount'] ?? 50.00);
+        $maxWithdrawal = (float)($settings['max_withdrawal_amount'] ?? 5000.00);
+        $withdrawalFee = (float)($settings['withdrawal_fee'] ?? 0.00);
+        $withdrawalsEnabled = (int)($settings['withdrawals_enabled'] ?? 1);
+
+        if (!$withdrawalsEnabled) {
+            $this->session->setFlash('error', "Withdrawals are currently disabled by the system administrator.");
+            $this->redirect('/wallet');
+        }
 
         if ($amount < $minWithdrawal) {
             $this->session->setFlash('error', "The minimum withdrawal amount is $" . number_format($minWithdrawal, 2) . ".");
-            $this->redirect('/profile/' . $this->authUser()['username']);
+            $this->redirect('/wallet');
         }
 
-        if ($amount > $balance) {
-            $this->session->setFlash('error', "Insufficient funds. Your available balance is $" . number_format($balance, 2) . ".");
-            $this->redirect('/profile/' . $this->authUser()['username']);
+        if ($amount > $maxWithdrawal) {
+            $this->session->setFlash('error', "The maximum withdrawal amount per request is $" . number_format($maxWithdrawal, 2) . ".");
+            $this->redirect('/wallet');
+        }
+
+        // Total deduction including fee
+        $totalDeduction = $amount + $withdrawalFee;
+
+        if ($totalDeduction > $balance) {
+            $this->session->setFlash('error', "Insufficient funds. To withdraw $" . number_format($amount, 2) . ", you need a balance of $" . number_format($totalDeduction, 2) . " (including a $" . number_format($withdrawalFee, 2) . " transaction fee). Your available balance is $" . number_format($balance, 2) . ".");
+            $this->redirect('/wallet');
         }
 
         if (empty($destination)) {
             $this->session->setFlash('error', "Please provide payout destination details.");
-            $this->redirect('/profile/' . $this->authUser()['username']);
+            $this->redirect('/wallet');
         }
 
         // DB Transaction for safety
@@ -290,7 +371,7 @@ class ProfileController extends Controller
 
             // 1. Debit from wallet balance
             $stmtDebit = $db->prepare("UPDATE wallets SET balance = balance - :amount WHERE user_id = :user_id");
-            $stmtDebit->execute(['amount' => $amount, 'user_id' => $userId]);
+            $stmtDebit->execute(['amount' => $totalDeduction, 'user_id' => $userId]);
 
             // 2. Create withdrawal request
             $stmtReq = $db->prepare(
@@ -310,8 +391,8 @@ class ProfileController extends Controller
             );
             $stmtTx->execute([
                 'wallet_id' => $userId,
-                'amount'    => -$amount,
-                'desc'      => "Requested withdrawal to " . substr($destination, 0, 40)
+                'amount'    => -$totalDeduction,
+                'desc'     => "Withdrawal request to " . substr($destination, 0, 40) . " (Fee: $" . number_format($withdrawalFee, 2) . ")"
             ]);
 
             $db->commit();
@@ -323,6 +404,166 @@ class ProfileController extends Controller
             $this->session->setFlash('error', "Withdrawal submission failed. Please try again.");
         }
 
-        $this->redirect('/profile/' . $this->authUser()['username']);
+        $this->redirect('/wallet');
+    }
+
+    /**
+     * Display Followers list with real-time searches
+     */
+    public function followers(string $username): void
+    {
+        $profileUser = $this->userModel->findByUsername($username);
+        if (!$profileUser) {
+            $this->response->setStatusCode(404);
+            die("User not found.");
+        }
+
+        $search = trim($this->request->get('q', ''));
+        $currentUserId = $this->authId();
+
+        // Query followers with optional search filters
+        $sql = "SELECT u.*
+                FROM follows f
+                JOIN users u ON f.follower_id = u.id
+                WHERE f.followed_id = :user_id";
+
+        $params = ['user_id' => $profileUser['id']];
+
+        if (!empty($search)) {
+            $sql .= " AND (u.username LIKE :q1 OR u.full_name LIKE :q2)";
+            $params['q1'] = '%' . $search . '%';
+            $params['q2'] = '%' . $search . '%';
+        }
+
+        $sql .= " ORDER BY f.created_at DESC";
+        $followers = $this->userModel->fetchAll($sql, $params);
+
+        // Map follow states for button toggle
+        foreach ($followers as &$f) {
+            $f['is_following'] = $currentUserId ? $this->userModel->isFollowing($currentUserId, (int)$f['id']) : false;
+        }
+
+        $this->view('profile.followers', [
+            'profileUser' => $profileUser,
+            'followers'   => $followers,
+            'search'      => $search,
+            'csrf_token'  => $this->session->generateCsrfToken()
+        ]);
+    }
+
+    /**
+     * Display Following list with real-time searches
+     */
+    public function following(string $username): void
+    {
+        $profileUser = $this->userModel->findByUsername($username);
+        if (!$profileUser) {
+            $this->response->setStatusCode(404);
+            die("User not found.");
+        }
+
+        $search = trim($this->request->get('q', ''));
+        $currentUserId = $this->authId();
+
+        // Query following list with search filters
+        $sql = "SELECT u.*
+                FROM follows f
+                JOIN users u ON f.followed_id = u.id
+                WHERE f.follower_id = :user_id";
+
+        $params = ['user_id' => $profileUser['id']];
+
+        if (!empty($search)) {
+            $sql .= " AND (u.username LIKE :q1 OR u.full_name LIKE :q2)";
+            $params['q1'] = '%' . $search . '%';
+            $params['q2'] = '%' . $search . '%';
+        }
+
+        $sql .= " ORDER BY f.created_at DESC";
+        $following = $this->userModel->fetchAll($sql, $params);
+
+        // Map follow states
+        foreach ($following as &$f) {
+            $f['is_following'] = $currentUserId ? $this->userModel->isFollowing($currentUserId, (int)$f['id']) : false;
+        }
+
+        $this->view('profile.following', [
+            'profileUser' => $profileUser,
+            'following'   => $following,
+            'search'      => $search,
+            'csrf_token'  => $this->session->generateCsrfToken()
+        ]);
+    }
+
+    /**
+     * Renders modern, feature-rich Wallet & Earnings page with full metrics breakdown
+     */
+    public function wallet(): void
+    {
+        $userId = $this->authId();
+        if (!$userId) {
+            $this->redirect('/auth/login');
+        }
+
+        // Fetch Wallet record
+        $wallet = $this->userModel->getWallet($userId);
+        if (!$wallet) {
+            // Auto initialize wallet if missing
+            $this->userModel->query("INSERT IGNORE INTO wallets (user_id, balance, pending_balance) VALUES (:id, 0.00, 0.00)", ['id' => $userId]);
+            $wallet = $this->userModel->getWallet($userId);
+        }
+
+        // Calculate transaction metrics
+        $transactions = $this->userModel->fetchAll(
+            "SELECT * FROM transactions WHERE wallet_id = :id ORDER BY created_at DESC",
+            ['id' => $userId]
+        );
+
+        $totalEarnings = 0.00;
+        $creatorEarnings = 0.00;
+        $referralEarnings = 0.00;
+        $recommendationEarnings = 0.00;
+
+        foreach ($transactions as $t) {
+            $amt = (float)$t['amount'];
+            if ($amt > 0) {
+                $totalEarnings += $amt;
+                if ($t['type'] === 'sale') {
+                    $creatorEarnings += $amt;
+                } elseif ($t['type'] === 'commission') {
+                    $referralEarnings += $amt;
+                    $recommendationEarnings += $amt; // Direct conversion commission
+                }
+            }
+        }
+
+        // Fetch withdrawal settings
+        $settings = $this->userModel->fetch("SELECT * FROM commission_settings WHERE id = 1");
+
+        $minWithdrawal = (float)($settings['min_withdrawal_amount'] ?? 50.00);
+        $maxWithdrawal = (float)($settings['max_withdrawal_amount'] ?? 5000.00);
+        $withdrawalFee = (float)($settings['withdrawal_fee'] ?? 0.00);
+        $withdrawalsEnabled = (int)($settings['withdrawals_enabled'] ?? 1);
+
+        // Fetch withdrawals history
+        $withdrawalsHistory = $this->userModel->fetchAll(
+            "SELECT * FROM withdrawals WHERE user_id = :id ORDER BY created_at DESC",
+            ['id' => $userId]
+        );
+
+        $this->view('profile.wallet', [
+            'wallet'                 => $wallet,
+            'transactions'           => $transactions,
+            'totalEarnings'          => $totalEarnings,
+            'creatorEarnings'        => $creatorEarnings,
+            'referralEarnings'       => $referralEarnings,
+            'recommendationEarnings' => $recommendationEarnings,
+            'withdrawalsHistory'     => $withdrawalsHistory,
+            'minWithdrawal'          => $minWithdrawal,
+            'maxWithdrawal'          => $maxWithdrawal,
+            'withdrawalFee'          => $withdrawalFee,
+            'withdrawalsEnabled'     => $withdrawalsEnabled,
+            'csrf_token'             => $this->session->generateCsrfToken()
+        ]);
     }
 }

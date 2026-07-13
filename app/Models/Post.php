@@ -13,14 +13,16 @@ class Post extends Model
         // Enforce 500 character limit
         $content = mb_substr(trim($data['content']), 0, 500);
 
-        $sql = "INSERT INTO posts (user_id, content, parent_id, quote_id)
-                VALUES (:user_id, :content, :parent_id, :quote_id)";
+        $sql = "INSERT INTO posts (user_id, content, parent_id, quote_id, product_id, referral_code)
+                VALUES (:user_id, :content, :parent_id, :quote_id, :product_id, :referral_code)";
 
         $params = [
-            'user_id'   => $data['user_id'],
-            'content'   => $content,
-            'parent_id' => $data['parent_id'] ?? null,
-            'quote_id'  => $data['quote_id'] ?? null
+            'user_id'       => $data['user_id'],
+            'content'       => $content,
+            'parent_id'     => $data['parent_id'] ?? null,
+            'quote_id'      => $data['quote_id'] ?? null,
+            'product_id'    => $data['product_id'] ?? null,
+            'referral_code' => $data['referral_code'] ?? null
         ];
 
         $this->query($sql, $params);
@@ -60,6 +62,10 @@ class Post extends Model
             // Fetch quoted post if exists
             if ($post['quote_id']) {
                 $post['quoted_post'] = $this->findById((int)$post['quote_id'], $currUserId);
+            }
+            // Fetch product card info if exists
+            if ($post['product_id']) {
+                $post['product'] = $this->getProductCardDetails((int)$post['product_id']);
             }
         }
 
@@ -292,6 +298,9 @@ class Post extends Model
             if ($post['quote_id']) {
                 $post['quoted_post'] = $this->findById((int)$post['quote_id'], $userId);
             }
+            if ($post['product_id']) {
+                $post['product'] = $this->getProductCardDetails((int)$post['product_id']);
+            }
         }
 
         return $posts;
@@ -320,8 +329,26 @@ class Post extends Model
             if ($reply['quote_id']) {
                 $reply['quoted_post'] = $this->findById((int)$reply['quote_id'], $currUserId);
             }
+            if ($reply['product_id']) {
+                $reply['product'] = $this->getProductCardDetails((int)$reply['product_id']);
+            }
         }
 
         return $replies;
+    }
+
+    /**
+     * Retrieve essential details of a product card
+     */
+    public function getProductCardDetails(int $productId): ?array
+    {
+        $sql = "SELECT p.id, p.name, p.slug, p.price, p.type, u.username as creator_username, u.full_name as creator_name,
+                       (SELECT AVG(rating) FROM product_reviews WHERE product_id = p.id) as avg_rating,
+                       (SELECT COUNT(*) FROM orders WHERE product_id = p.id AND status = 'completed') as sales_count
+                FROM products p
+                JOIN users u ON p.creator_id = u.id
+                WHERE p.id = :id";
+        $card = $this->fetch($sql, ['id' => $productId]);
+        return $card ?: null;
     }
 }

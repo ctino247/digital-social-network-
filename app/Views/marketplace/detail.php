@@ -3,6 +3,8 @@ use App\Core\Security;
 $session = new \App\Core\Session();
 $currentUser = $session->get('user');
 include ROOT_PATH . '/app/Views/partials/header.php';
+
+$isCreator = ($currentUser && (int)$product['creator_id'] === (int)$currentUser['id']);
 ?>
 
 <div class="space-y-6">
@@ -29,33 +31,55 @@ include ROOT_PATH . '/app/Views/partials/header.php';
                 <h1 class="text-2xl font-bold font-geist text-on-background leading-tight mb-2"><?= Security::e($product['name']) ?></h1>
 
                 <!-- Creator Bio Header block -->
-                <div class="flex items-center space-x-2.5 mb-6">
-                    <div class="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold overflow-hidden text-xs">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold overflow-hidden text-sm shrink-0">
                         <?php if (!empty($product['creator_avatar'])): ?>
                             <img src="<?= Security::e($product['creator_avatar']) ?>" class="w-full h-full object-cover"/>
+                        <?php else: ?>
+                            <?= strtoupper(substr($product['creator_username'], 0, 1)) ?>
                         <?php endif; ?>
                     </div>
-                    <span class="text-xs text-on-surface-variant font-medium">Offered by <a href="/profile/<?= Security::e($product['creator_username']) ?>" class="text-on-background font-bold hover:text-primary transition-colors">@<?= Security::e($product['creator_username']) ?></a></span>
+                    <div class="min-w-0">
+                        <div class="flex items-center space-x-1.5">
+                            <a href="/profile/<?= Security::e($product['creator_username']) ?>" class="text-xs text-white font-bold hover:text-primary transition-colors">@<?= Security::e($product['creator_username']) ?></a>
+                            <span class="px-2 py-0.2 bg-primary/10 text-primary text-[8px] font-bold uppercase rounded-full border border-primary/20">Creator Partner</span>
+                        </div>
+                        <p class="text-[10px] text-gray-400 font-semibold uppercase mt-0.5"><?= $creatorFollowers ?> Followers</p>
+                    </div>
+                </div>
+
+                <!-- Product Gallery Section -->
+                <div class="space-y-3 mb-6">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">Product Gallery</h3>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="aspect-video bg-background/50 rounded-2xl border border-white/5 flex items-center justify-center text-primary hover:border-primary/20 transition-all cursor-pointer">
+                            <span class="material-symbols-outlined text-2xl">image</span>
+                        </div>
+                        <div class="aspect-video bg-background/50 rounded-2xl border border-white/5 flex items-center justify-center text-primary/40 hover:border-primary/20 transition-all cursor-pointer">
+                            <span class="material-symbols-outlined text-2xl">play_circle</span>
+                        </div>
+                        <div class="aspect-video bg-background/50 rounded-2xl border border-white/5 flex items-center justify-center text-primary/40 hover:border-primary/20 transition-all cursor-pointer">
+                            <span class="material-symbols-outlined text-2xl">photo_library</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Specs stats cards -->
                 <div class="grid grid-cols-3 gap-4 border-y border-white/5 py-4 mb-6">
                     <div class="text-center">
-                        <p class="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant">Rating</p>
+                        <p class="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant">Avg Rating</p>
                         <p class="text-sm font-bold text-primary mt-1 font-geist flex items-center justify-center space-x-1">
                             <span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">star</span>
                             <span><?= $product['avg_rating'] ? number_format($product['avg_rating'], 1) : '5.0' ?></span>
                         </p>
                     </div>
                     <div class="text-center border-x border-white/5">
-                        <p class="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant">Reviews</p>
+                        <p class="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant">Reviews count</p>
                         <p class="text-sm font-bold text-on-background mt-1 font-geist"><?= (int)$product['reviews_count'] ?></p>
                     </div>
                     <div class="text-center">
-                        <p class="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant">Secure Delivery</p>
-                        <p class="text-sm font-bold text-on-background mt-1 font-geist flex items-center justify-center">
-                            <span class="material-symbols-outlined text-sm text-green-400">verified</span>
-                        </p>
+                        <p class="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant">Total Sales</p>
+                        <p class="text-sm font-bold text-primary mt-1 font-geist"><?= $salesCount ?> sold</p>
                     </div>
                 </div>
 
@@ -63,6 +87,55 @@ include ROOT_PATH . '/app/Views/partials/header.php';
                 <div>
                     <h3 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">Description</h3>
                     <div class="text-sm text-on-surface leading-relaxed whitespace-pre-line"><?= Security::e($product['description']) ?></div>
+                </div>
+            </div>
+
+            <!-- Similar & Recommended Products Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Similar Products -->
+                <div class="bg-surface-container-low p-5 rounded-3xl border border-white/5 space-y-4">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-primary border-b border-white/5 pb-2">Similar Products</h3>
+                    <?php if (empty($similarProducts)): ?>
+                        <p class="text-xs text-gray-500">No similar products found.</p>
+                    <?php else: ?>
+                        <div class="space-y-3">
+                            <?php foreach ($similarProducts as $sp): ?>
+                                <a href="/product/<?= Security::e($sp['slug']) ?>" class="flex items-center justify-between p-2.5 rounded-2xl bg-background/50 hover:bg-background border border-white/5 hover:border-primary/20 transition-all group">
+                                    <div class="min-w-0 flex items-center space-x-2.5">
+                                        <span class="material-symbols-outlined text-primary text-xl shrink-0">deployed_code</span>
+                                        <div class="min-w-0">
+                                            <h4 class="text-xs font-bold text-white group-hover:text-primary transition-colors truncate font-geist"><?= Security::e($sp['name']) ?></h4>
+                                            <p class="text-[9px] text-gray-400">By @<?= Security::e($sp['creator_username']) ?></p>
+                                        </div>
+                                    </div>
+                                    <span class="text-xs font-bold text-primary font-geist shrink-0">$<?= number_format($sp['price'], 2) ?></span>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Recommended Products -->
+                <div class="bg-surface-container-low p-5 rounded-3xl border border-white/5 space-y-4">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-primary border-b border-white/5 pb-2">Other Recommended</h3>
+                    <?php if (empty($recommendedProducts)): ?>
+                        <p class="text-xs text-gray-500">No other recommendations available.</p>
+                    <?php else: ?>
+                        <div class="space-y-3">
+                            <?php foreach ($recommendedProducts as $rp): ?>
+                                <a href="/product/<?= Security::e($rp['slug']) ?>" class="flex items-center justify-between p-2.5 rounded-2xl bg-background/50 hover:bg-background border border-white/5 hover:border-primary/20 transition-all group">
+                                    <div class="min-w-0 flex items-center space-x-2.5">
+                                        <span class="material-symbols-outlined text-primary text-xl shrink-0">deployed_code</span>
+                                        <div class="min-w-0">
+                                            <h4 class="text-xs font-bold text-white group-hover:text-primary transition-colors truncate font-geist"><?= Security::e($rp['name']) ?></h4>
+                                            <p class="text-[9px] text-gray-400">By @<?= Security::e($rp['creator_username']) ?></p>
+                                        </div>
+                                    </div>
+                                    <span class="text-xs font-bold text-primary font-geist shrink-0">$<?= number_format($rp['price'], 2) ?></span>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -166,29 +239,49 @@ include ROOT_PATH . '/app/Views/partials/header.php';
                         </button>
                     </form>
                 <?php endif; ?>
+
+                <!-- Creator Specific Buttons -->
+                <?php if ($isCreator): ?>
+                    <div class="pt-4 border-t border-white/5 space-y-2.5">
+                        <a href="/creator/products/<?= (int)$product['id'] ?>/edit" class="block w-full py-3 bg-surface-container-high hover:bg-white/5 border border-white/10 text-white font-bold rounded-full text-xs transition-all">
+                            Edit Product Description
+                        </a>
+                        <a href="/creator/dashboard" class="block w-full py-3 bg-primary/10 text-primary font-bold rounded-full text-xs hover:bg-primary hover:text-on-primary transition-all">
+                            View Product Analytics
+                        </a>
+                    </div>
+                <?php endif; ?>
             </div>
 
-            <!-- Affiliate recommendation card -->
-            <?php if ($currentUser): ?>
+            <!-- Affiliate recommendation card (Only visible if visitor is a Sales Partner) -->
+            <?php if ($currentUser && $currentUser['is_sales_partner']): ?>
                 <div class="bg-surface-container-low p-6 rounded-3xl border border-white/5 space-y-4">
                     <div class="flex items-center space-x-2 text-primary">
                         <span class="material-symbols-outlined">share</span>
-                        <h3 class="font-bold font-geist text-sm uppercase tracking-wider">Recommend & Earn</h3>
+                        <h3 class="font-bold font-geist text-sm uppercase tracking-wider">Recommend Product</h3>
                     </div>
-                    <p class="text-xs text-on-surface-variant leading-relaxed">Share this product with your followers! Anyone who buys through your unique recommendation link generates up to 5 levels of affiliate royalties for you!</p>
+                    <p class="text-xs text-on-surface-variant leading-relaxed">As an active Sales Partner, you can recommend this digital asset to earn up to 5 levels of commission splits!</p>
 
-                    <div class="space-y-2">
-                        <input type="text" readonly id="affiliate-link" value="<?= Security::e($referralLink) ?>" class="w-full px-3 py-2.5 bg-background border border-white/15 rounded-xl text-on-surface-variant text-[11px] font-mono outline-none"/>
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 font-geist">Your Unique Referral Link</p>
+                            <input type="text" readonly id="affiliate-link" value="<?= Security::e($referralLink) ?>" class="w-full px-3 py-2.5 bg-background border border-white/15 rounded-xl text-on-surface-variant text-[11px] font-mono outline-none"/>
+                        </div>
 
-                        <button onclick="copyAffiliateLink()" class="w-full py-2.5 bg-surface-container-high text-on-background hover:bg-white/5 text-xs font-bold rounded-full transition-all flex justify-center items-center space-x-1.5">
-                            <span class="material-symbols-outlined text-sm">content_copy</span>
-                            <span id="copy-btn-text">Copy Link</span>
-                        </button>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="copyAffiliateLink()" class="py-2.5 bg-surface-container-high text-on-background hover:bg-white/5 border border-white/5 text-[10px] font-bold rounded-full transition-all flex justify-center items-center space-x-1">
+                                <span class="material-symbols-outlined text-xs">content_copy</span>
+                                <span id="copy-btn-text">Copy Link</span>
+                            </button>
+                            <a href="/post/create?product_id=<?= (int)$product['id'] ?>&ref=<?= Security::e($referralCodeKey) ?>" class="py-2.5 bg-primary/15 text-primary hover:bg-primary hover:text-on-primary border border-primary/20 text-[10px] font-bold rounded-full transition-all flex justify-center items-center space-x-1">
+                                <span class="material-symbols-outlined text-xs">send</span>
+                                <span>Share Internally</span>
+                            </a>
+                        </div>
+                        <a href="/recommendation/<?= Security::e($referralCodeKey) ?>/analytics" class="block text-center w-full py-2.5 bg-background hover:bg-white/5 text-[10px] font-bold text-gray-300 rounded-full transition-all border border-white/10">
+                            View Recommendation Analytics
+                        </a>
                     </div>
-                </div>
-            <?php else: ?>
-                <div class="bg-surface-container-low p-5 rounded-3xl border border-white/5 text-center">
-                    <p class="text-xs text-on-surface-variant"><a href="/auth/login" class="text-primary font-bold hover:underline">Sign In</a> to generate recommendation links and earn commissions on sales.</p>
                 </div>
             <?php endif; ?>
 

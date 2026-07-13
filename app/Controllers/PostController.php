@@ -23,9 +23,18 @@ class PostController extends Controller
             $quotedPost = $this->postModel->findById((int)$quoteId, $this->authId());
         }
 
+        $productId = $this->request->get('product_id', null);
+        $refCode = $this->request->get('ref', null);
+        $recommendProduct = null;
+        if ($productId) {
+            $recommendProduct = $this->postModel->getProductCardDetails((int)$productId);
+        }
+
         $this->view('post.create', [
-            'quotedPost' => $quotedPost,
-            'csrf_token' => $this->session->generateCsrfToken()
+            'quotedPost'       => $quotedPost,
+            'recommendProduct' => $recommendProduct,
+            'refCode'          => $refCode,
+            'csrf_token'       => $this->session->generateCsrfToken()
         ]);
     }
 
@@ -39,6 +48,8 @@ class PostController extends Controller
 
         $content = trim($this->request->get('content', ''));
         $quoteId = $this->request->get('quote_id', null);
+        $productId = $this->request->get('product_id', null);
+        $refCode = $this->request->get('referral_code', null);
 
         // Poll variables
         $pollQuestion = trim($this->request->get('poll_question', ''));
@@ -56,10 +67,12 @@ class PostController extends Controller
 
         // Setup payload
         $data = [
-            'user_id'   => $userId,
-            'content'   => $content,
-            'parent_id' => null,
-            'quote_id'  => $quoteId ?: null
+            'user_id'       => $userId,
+            'content'       => $content,
+            'parent_id'     => null,
+            'quote_id'      => $quoteId ?: null,
+            'product_id'    => $productId ?: null,
+            'referral_code' => $refCode ?: null
         ];
 
         // Include poll parameters if complete
@@ -207,5 +220,40 @@ class PostController extends Controller
         } else {
             $this->json(['success' => false, 'error' => 'Could not submit vote. Make sure the poll is active and you have not voted.'], 400);
         }
+    }
+
+    /**
+     * Submit a quote post directly via POST
+     */
+    public function quote(int $id): void
+    {
+        $this->validateCsrf();
+        $userId = $this->authId();
+        if (!$userId) {
+            $this->redirect('/auth/login');
+        }
+
+        $content = trim($this->request->get('content', ''));
+        if (empty($content)) {
+            $this->session->setFlash('error', 'Quote content cannot be empty.');
+            $this->redirect("/post/{$id}");
+        }
+
+        if (mb_strlen($content) > 500) {
+            $this->session->setFlash('error', 'Quote content cannot exceed 500 characters.');
+            $this->redirect("/post/{$id}");
+        }
+
+        $this->postModel->create([
+            'user_id'       => $userId,
+            'content'       => $content,
+            'parent_id'     => null,
+            'quote_id'      => $id,
+            'product_id'    => null,
+            'referral_code' => null
+        ]);
+
+        $this->session->setFlash('success', 'Your quote post was successfully published!');
+        $this->redirect('/');
     }
 }

@@ -87,6 +87,19 @@ class CartController extends Controller
                 'creator_id'  => $product['creator_id']
             ];
             $this->session->set('cart', $cart);
+
+            // Log Checkout Start for Recommendation Analytics
+            $refCode = $_COOKIE['referral_code'] ?? null;
+            if ($refCode) {
+                $refLink = $this->productModel->fetch(
+                    "SELECT id FROM referral_links WHERE code = :code AND product_id = :p_id",
+                    ['code' => $refCode, 'p_id' => $productId]
+                );
+                if ($refLink) {
+                    $this->productModel->trackRecommendationEvent((int)$refLink['id'], 'checkout_start');
+                }
+            }
+
             $this->session->setFlash('success', 'Product added to shopping cart.');
         } else {
             $this->session->setFlash('error', 'Product not found.');
@@ -231,6 +244,17 @@ class CartController extends Controller
                 ]);
 
                 $orderId = (int)$db->lastInsertId();
+
+                // Track Successful Purchase for Recommendation Analytics
+                if ($referrerId) {
+                    $refLink = $this->productModel->fetch(
+                        "SELECT id FROM referral_links WHERE user_id = :user_id AND product_id = :product_id",
+                        ['user_id' => $referrerId, 'product_id' => $productId]
+                    );
+                    if ($refLink) {
+                        $this->productModel->trackRecommendationEvent((int)$refLink['id'], 'purchase');
+                    }
+                }
 
                 // Generate system notifications & log activity
                 $buyerName = $this->authUser()['full_name'];

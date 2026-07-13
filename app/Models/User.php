@@ -10,8 +10,8 @@ class User extends Model
 {
     public function create(array $data): int
     {
-        $sql = "INSERT INTO users (username, email, password_hash, full_name, bio, avatar_url, role, is_verified)
-                VALUES (:username, :email, :password_hash, :full_name, :bio, :avatar_url, :role, :is_verified)";
+        $sql = "INSERT INTO users (username, email, password_hash, full_name, bio, avatar_url, role, is_verified, referred_by)
+                VALUES (:username, :email, :password_hash, :full_name, :bio, :avatar_url, :role, :is_verified, :referred_by)";
 
         $params = [
             'username'      => $data['username'],
@@ -21,7 +21,8 @@ class User extends Model
             'bio'           => $data['bio'] ?? null,
             'avatar_url'    => $data['avatar_url'] ?? null,
             'role'          => $data['role'] ?? 'member',
-            'is_verified'   => $data['is_verified'] ?? 0
+            'is_verified'   => $data['is_verified'] ?? 0,
+            'referred_by'   => $data['referred_by'] ?? null
         ];
 
         $this->query($sql, $params);

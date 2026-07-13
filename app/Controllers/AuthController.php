@@ -58,6 +58,9 @@ class AuthController extends Controller
             $this->redirect('/auth/register');
         }
 
+        // Get referrer from session for Smart Referral Landing
+        $referredByUserId = $this->session->get('referred_by_user_id', null);
+
         // Create member. Auto-verify to make testing smooth in sandboxed environment.
         $userId = $this->userModel->create([
             'username'    => $username,
@@ -65,7 +68,8 @@ class AuthController extends Controller
             'password'    => $password,
             'full_name'   => $fullName,
             'role'        => 'member',
-            'is_verified' => 1 // Auto verified
+            'is_verified' => 1, // Auto verified
+            'referred_by' => $referredByUserId
         ]);
 
         $createdUser = $this->userModel->findById($userId);
@@ -74,8 +78,26 @@ class AuthController extends Controller
         // Trigger automated welcome mail
         \App\Services\Mailer::sendWelcomeEmail($email, $fullName, $username);
 
+        // Smart Referral Landing Redirect Logic
+        $redirectUrl = '/';
+        if ($referredByUserId) {
+            $referrer = $this->userModel->findById((int)$referredByUserId);
+            if ($referrer) {
+                // If referrer is Creator or Admin, redirect to products tab
+                if (in_array($referrer['role'], ['creator', 'admin'])) {
+                    $redirectUrl = "/profile/" . $referrer['username'] . "?tab=products";
+                } else {
+                    // Otherwise they are only Sales Partner, redirect to recommendations tab
+                    $redirectUrl = "/profile/" . $referrer['username'] . "?tab=recommendations";
+                }
+
+                // Clear session reference
+                $this->session->remove('referred_by_user_id');
+            }
+        }
+
         $this->session->setFlash('success', 'Registration successful! Welcome to Mimshack.');
-        $this->redirect('/');
+        $this->redirect($redirectUrl);
     }
 
     public function login(): void

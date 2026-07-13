@@ -106,6 +106,41 @@ include ROOT_PATH . '/app/Views/partials/header.php';
                             </div>
                         <?php endif; ?>
 
+                        <!-- Recommendation Product Card if exists -->
+                        <?php if (!empty($post['product'])): ?>
+                            <div class="p-5 rounded-3xl bg-surface-container-high border border-primary/20 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0 relative">
+                                        <span class="material-symbols-outlined text-3xl">deployed_code</span>
+                                        <span class="absolute -top-2 -right-2 px-1.5 py-0.5 bg-primary text-on-primary text-[8px] font-bold rounded-full uppercase"><?= Security::e($post['product']['type']) ?></span>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h4 class="font-bold text-sm text-white group-hover:text-primary transition-colors font-geist truncate"><?= Security::e($post['product']['name']) ?></h4>
+                                        <p class="text-xs text-gray-400 mt-0.5">By <span class="font-semibold text-gray-300">@<?= Security::e($post['product']['creator_username']) ?></span></p>
+                                        <div class="flex items-center space-x-2 mt-1.5 text-[10px] text-gray-400 font-semibold uppercase">
+                                            <span class="flex items-center text-yellow-400">
+                                                <span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">star</span>
+                                                <span class="ml-1 text-[#E4E2E4] font-geist"><?= $post['product']['avg_rating'] ? number_format($post['product']['avg_rating'], 1) : '5.0' ?></span>
+                                            </span>
+                                            <span>•</span>
+                                            <span><?= (int)$post['product']['sales_count'] ?> sales</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center space-x-2 shrink-0">
+                                    <a href="/product/<?= Security::e($post['product']['slug']) ?><?= $post['referral_code'] ? '?ref=' . Security::e($post['referral_code']) : '' ?>" class="px-5 py-2.5 bg-primary text-on-primary font-bold rounded-full hover:opacity-90 text-xs shadow-md shadow-primary/20">
+                                        Buy Now ($<?= number_format($post['product']['price'], 2) ?>)
+                                    </a>
+                                    <?php if ($currentUser && $currentUser['is_sales_partner']): ?>
+                                        <a href="/product/<?= Security::e($post['product']['slug']) ?>" class="p-2.5 rounded-full bg-surface-container-low border border-white/5 text-gray-300 hover:text-primary transition-colors" title="Recommend Product">
+                                            <span class="material-symbols-outlined text-sm">share</span>
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
                         <!-- Embedded Quoted Post if exists -->
                         <?php if (!empty($post['quoted_post'])): ?>
                             <div class="p-4 rounded-2xl bg-background/50 border border-white/5 mb-4">

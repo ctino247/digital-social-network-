@@ -43,11 +43,14 @@ CREATE TABLE IF NOT EXISTS posts (
     content VARCHAR(500) NOT NULL,
     parent_id INT DEFAULT NULL, -- For Replies
     quote_id INT DEFAULT NULL,  -- For Quote Posts
+    product_id INT DEFAULT NULL, -- For Recommendation Posts
+    referral_code VARCHAR(50) DEFAULT NULL, -- For Recommendation Posts
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (parent_id) REFERENCES posts(id) ON DELETE SET NULL,
     FOREIGN KEY (quote_id) REFERENCES posts(id) ON DELETE SET NULL,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL,
     INDEX idx_user_posts (user_id),
     INDEX idx_parent_post (parent_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -174,7 +177,7 @@ CREATE TABLE IF NOT EXISTS coupons (
     FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 14. Referral Links Table
+-- 14. Referral Links Table (Reused for Recommendations)
 CREATE TABLE IF NOT EXISTS referral_links (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -186,7 +189,19 @@ CREATE TABLE IF NOT EXISTS referral_links (
     UNIQUE KEY uniq_user_product_link (user_id, product_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 15. Referral Clicks Table
+-- 15. Recommendation Events Table (Analytics tracking)
+CREATE TABLE IF NOT EXISTS recommendation_events (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    referral_link_id INT NOT NULL,
+    event_type ENUM('click', 'view', 'checkout_start', 'purchase') NOT NULL,
+    ip_address VARCHAR(45) NOT NULL,
+    user_agent VARCHAR(255) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (referral_link_id) REFERENCES referral_links(id) ON DELETE CASCADE,
+    INDEX idx_ref_link_event (referral_link_id, event_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 16. Referral Clicks Table (Legacy, but kept for schema structure)
 CREATE TABLE IF NOT EXISTS referral_clicks (
     id INT AUTO_INCREMENT PRIMARY KEY,
     referral_link_id INT NOT NULL,
@@ -199,7 +214,7 @@ CREATE TABLE IF NOT EXISTS referral_clicks (
     INDEX idx_click_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 16. Orders Table (Digital purchases)
+-- 17. Orders Table (Digital purchases)
 CREATE TABLE IF NOT EXISTS orders (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -222,7 +237,7 @@ CREATE TABLE IF NOT EXISTS orders (
     INDEX idx_order_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 17. Wallet Table
+-- 18. Wallet Table
 CREATE TABLE IF NOT EXISTS wallets (
     user_id INT PRIMARY KEY,
     balance DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
@@ -232,7 +247,7 @@ CREATE TABLE IF NOT EXISTS wallets (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 18. Transactions Table
+-- 19. Transactions Table
 CREATE TABLE IF NOT EXISTS transactions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     wallet_id INT NOT NULL,
@@ -246,20 +261,20 @@ CREATE TABLE IF NOT EXISTS transactions (
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 19. Withdrawals Table
+-- 20. Withdrawals Table
 CREATE TABLE IF NOT EXISTS withdrawals (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     amount DECIMAL(15, 2) NOT NULL,
-    destination TEXT NOT NULL, -- Bank info, PayPal email, etc.
-    status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+    destination TEXT NOT NULL, -- Bank info, PayPal email, Flutterwave details, etc.
+    status ENUM('pending', 'approved', 'rejected', 'cancelled') NOT NULL DEFAULT 'pending',
     processed_at TIMESTAMP NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_withdrawal_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 20. Creator Applications Table
+-- 21. Creator Applications Table
 CREATE TABLE IF NOT EXISTS creator_applications (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL UNIQUE,
@@ -271,7 +286,7 @@ CREATE TABLE IF NOT EXISTS creator_applications (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 21. Commission Settings Table
+-- 22. Commission Settings Table
 CREATE TABLE IF NOT EXISTS commission_settings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     level_1_percent DECIMAL(5,2) NOT NULL DEFAULT 10.00,
@@ -282,17 +297,20 @@ CREATE TABLE IF NOT EXISTS commission_settings (
     platform_fee_percent DECIMAL(5,2) NOT NULL DEFAULT 5.00,
     attribution_window_days INT NOT NULL DEFAULT 30,
     min_withdrawal_amount DECIMAL(10,2) NOT NULL DEFAULT 50.00,
+    max_withdrawal_amount DECIMAL(10,2) NOT NULL DEFAULT 5000.00,
+    withdrawal_fee DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    withdrawals_enabled TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 22. System Settings Table (Key-Value)
+-- 23. System Settings Table (Key-Value)
 CREATE TABLE IF NOT EXISTS system_settings (
     `key` VARCHAR(100) PRIMARY KEY,
     `value` TEXT NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 23. Notifications Table
+-- 24. Notifications Table
 CREATE TABLE IF NOT EXISTS notifications (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -308,7 +326,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     INDEX idx_notification_read (is_read)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 24. Activity Logs
+-- 25. Activity Logs
 CREATE TABLE IF NOT EXISTS activity_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT DEFAULT NULL,
@@ -319,7 +337,7 @@ CREATE TABLE IF NOT EXISTS activity_logs (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 25. Announcements Table (Platform announcements)
+-- 26. Announcements Table (Platform announcements)
 CREATE TABLE IF NOT EXISTS announcements (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
@@ -327,9 +345,30 @@ CREATE TABLE IF NOT EXISTS announcements (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 27. Flutterwave Payments Table
+CREATE TABLE IF NOT EXISTS flutterwave_payments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tx_ref VARCHAR(100) NOT NULL UNIQUE,
+    transaction_id VARCHAR(100) DEFAULT NULL,
+    user_id INT NOT NULL,
+    product_id INT NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    currency VARCHAR(10) NOT NULL DEFAULT 'USD',
+    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    coupon_id INT DEFAULT NULL,
+    referrer_id INT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE SET NULL,
+    FOREIGN KEY (referrer_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 -- Default Settings and Admin User Seeds
-INSERT INTO commission_settings (id, level_1_percent, level_2_percent, level_3_percent, level_4_percent, level_5_percent, platform_fee_percent, attribution_window_days, min_withdrawal_amount)
-VALUES (1, 10.00, 5.00, 3.00, 2.00, 1.00, 5.00, 30, 50.00)
+INSERT INTO commission_settings (id, level_1_percent, level_2_percent, level_3_percent, level_4_percent, level_5_percent, platform_fee_percent, attribution_window_days, min_withdrawal_amount, max_withdrawal_amount, withdrawal_fee, withdrawals_enabled)
+VALUES (1, 10.00, 5.00, 3.00, 2.00, 1.00, 5.00, 30, 50.00, 5000.00, 0.00, 1)
 ON DUPLICATE KEY UPDATE id=id;
 
 -- Initial System Settings
@@ -346,6 +385,9 @@ INSERT INTO system_settings (`key`, `value`) VALUES
 ('paypal_secret', 'mock_paypal_secret'),
 ('stripe_key', 'mock_stripe_key'),
 ('stripe_secret', 'mock_stripe_secret'),
+('flutterwave_public_key', 'FLWPUBK_TEST-mock-public-key'),
+('flutterwave_secret_key', 'FLWSECK_TEST-mock-secret-key'),
+('flutterwave_encryption_key', 'FLWENCK_TEST-mock-encryption-key'),
 ('feature_toggle_chat', '1'),
 ('feature_toggle_marketplace', '1'),
 ('feature_toggle_social', '1'),

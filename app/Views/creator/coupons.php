@@ -58,7 +58,7 @@ include ROOT_PATH . '/app/Views/partials/header.php';
             <?php if (empty($coupons)): ?>
                 <div class="text-center py-12 bg-surface-container-low rounded-3xl border border-white/5 text-on-surface-variant">
                     <span class="material-symbols-outlined text-4xl mb-2 opacity-55">percent</span>
-                    <p class="text-sm font-medium">You haven\'t created any coupon codes yet.</p>
+                    <p class="text-sm font-medium">You haven't created any coupon codes yet.</p>
                 </div>
             <?php else: ?>
                 <div class="bg-surface-container-low p-5 rounded-3xl border border-white/5 overflow-x-auto">
