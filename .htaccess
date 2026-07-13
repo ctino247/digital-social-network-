@@ -1,0 +1,17 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Prevent directory listing
+    Options -Indexes
+
+    # If the file exists directly, serve it
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    # If the file exists inside public/ directory, rewrite to it
+    RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    # Redirect everything else to public/index.php
+    RewriteRule ^(.*)$ public/index.php [L,QSA]
+</IfModule>
