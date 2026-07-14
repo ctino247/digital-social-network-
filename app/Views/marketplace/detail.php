@@ -265,19 +265,14 @@ $isCreator = ($currentUser && (int)$product['creator_id'] === (int)$currentUser[
                 <?php endif; ?>
             </div>
 
-            <!-- Affiliate recommendation card (Visible to all logged-in users, with status activation guidance) -->
-            <?php if ($currentUser): ?>
+            <!-- Affiliate recommendation card (Only visible if visitor is a Sales Partner) -->
+            <?php if ($currentUser && $currentUser['is_sales_partner']): ?>
                 <div class="bg-white p-6 rounded-3xl border border-[#E0E6E2] space-y-4 shadow-sm">
                     <div class="flex items-center space-x-2 text-[#004D40]">
                         <span class="material-symbols-outlined font-bold">share</span>
                         <h3 class="font-extrabold text-sm uppercase tracking-wider">Recommend Product</h3>
                     </div>
-
-                    <?php if ((int)($currentUser['is_sales_partner'] ?? 0) === 1): ?>
-                        <p class="text-xs text-emerald-800 leading-relaxed font-bold bg-emerald-50 border border-emerald-100 p-3.5 rounded-2xl">✓ Your Sales Partner status is active! You will earn up to 5 levels of affiliate commission splits for every purchase referred through this link.</p>
-                    <?php else: ?>
-                        <p class="text-xs text-amber-800 leading-relaxed font-semibold bg-amber-50 border border-amber-100 p-3.5 rounded-2xl">ℹ️ Purchase any digital product on Mimshack to activate your Sales Partner status and unlock multi-level passive commission payouts!</p>
-                    <?php endif; ?>
+                    <p class="text-xs text-on-surface-variant leading-relaxed font-semibold">As an active Sales Partner, you can recommend this digital asset to earn up to 5 levels of commission splits!</p>
 
                     <div class="space-y-3">
                         <div>
@@ -286,33 +281,16 @@ $isCreator = ($currentUser && (int)$product['creator_id'] === (int)$currentUser[
                         </div>
 
                         <div class="grid grid-cols-2 gap-2">
-                            <button onclick="copyAffiliateLink()" class="py-2.5 bg-white text-[#004D40] hover:bg-[#F5F7F4] border border-[#E0E6E2] text-[10px] font-bold rounded-full transition-all flex justify-center items-center space-x-1 shadow-sm">
+                            <button onclick="copyAffiliateLink()" class="py-2.5 bg-white text-[#004D40] hover:bg-[#F5F7F4] border border-[#E0E6E2] text-[10px] font-bold rounded-full transition-all flex justify-center items-center space-x-1">
                                 <span class="material-symbols-outlined text-xs font-bold">content_copy</span>
                                 <span id="copy-btn-text">Copy Link</span>
                             </button>
-                            <a href="/post/create?product_id=<?= (int)$product['id'] ?>&ref=<?= Security::e($referralCodeKey) ?>" class="py-2.5 bg-[#004D40]/10 text-[#004D40] hover:bg-[#004D40] hover:text-white border border-[#004D40]/20 text-[10px] font-bold rounded-full transition-all flex justify-center items-center space-x-1 shadow-sm">
+                            <a href="/post/create?product_id=<?= (int)$product['id'] ?>&ref=<?= Security::e($referralCodeKey) ?>" class="py-2.5 bg-[#004D40]/10 text-[#004D40] hover:bg-[#004D40] hover:text-white border border-[#004D40]/20 text-[10px] font-bold rounded-full transition-all flex justify-center items-center space-x-1">
                                 <span class="material-symbols-outlined text-xs font-bold">send</span>
                                 <span>Share Internally</span>
                             </a>
                         </div>
-
-                        <!-- External Social Sharing Options -->
-                        <div class="space-y-1.5 pt-1.5 border-t border-[#E0E6E2]/60">
-                            <p class="text-[9px] font-extrabold text-[#004D40]/75 uppercase tracking-wider">Share Externally</p>
-                            <div class="grid grid-cols-3 gap-2">
-                                <a href="https://twitter.com/intent/tweet?text=<?= urlencode('Check out this amazing product on Mimshack: ' . $product['name']) ?>&url=<?= urlencode($referralLink) ?>" target="_blank" class="py-2 bg-[#1DA1F2]/10 hover:bg-[#1DA1F2] text-[#1DA1F2] hover:text-white font-bold text-[9px] rounded-full text-center transition-all">
-                                    X / Twitter
-                                </a>
-                                <a href="https://api.whatsapp.com/send?text=<?= urlencode('Check out this amazing product on Mimshack: ' . $product['name'] . ' - ' . $referralLink) ?>" target="_blank" class="py-2 bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white font-bold text-[9px] rounded-full text-center transition-all">
-                                    WhatsApp
-                                </a>
-                                <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($referralLink) ?>" target="_blank" class="py-2 bg-[#1877F2]/10 hover:bg-[#1877F2] text-[#1877F2] hover:text-white font-bold text-[9px] rounded-full text-center transition-all">
-                                    Facebook
-                                </a>
-                            </div>
-                        </div>
-
-                        <a href="/recommendation/<?= Security::e($referralCodeKey) ?>/analytics" class="block text-center w-full py-3 bg-[#FBFBF9] hover:bg-[#F5F7F4] text-[10px] font-bold text-[#004D40] rounded-full transition-all border border-[#E0E6E2]">
+                        <a href="/recommendation/<?= Security::e($referralCodeKey) ?>/analytics" class="block text-center w-full py-3 bg-[#F5F7F4] hover:bg-[#EBF0EC] text-[10px] font-bold text-[#004D40] rounded-full transition-all border border-[#E0E6E2]">
                             View Recommendation Analytics
                         </a>
                     </div>

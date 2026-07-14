@@ -70,7 +70,7 @@ class User extends Model
     public function updateProfile(int $id, array $data): void
     {
         $allowedKeys = [
-            'full_name', 'bio', 'avatar_url', 'cover_url', 'is_sales_partner',
+            'full_name', 'bio', 'avatar_url', 'cover_url', 'role', 'is_sales_partner',
             'website', 'occupation', 'country', 'social_links', 'email_preferences',
             'notification_settings', 'privacy_settings'
         ];

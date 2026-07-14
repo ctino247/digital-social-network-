@@ -55,16 +55,13 @@ $router->get('/cart', 'CartController@index');
 $router->post('/cart/add', 'CartController@add');
 $router->post('/cart/buy-now', 'CartController@buyNow');
 $router->post('/cart/remove', 'CartController@remove');
-$router->post('/cart/update-quantity', 'CartController@updateQuantity');
 $router->post('/cart/coupon', 'CartController@applyCoupon');
 $router->post('/cart/checkout', 'CartController@checkout', $auth);
 
 // Flutterwave Checkout & Webhook Routing
 $router->get('/flutterwave/simulate-checkout', 'FlutterwaveController@simulateCheckout');
 $router->post('/flutterwave/process-simulation', 'FlutterwaveController@processSimulation');
-$router->get('/flutterwave/callback', 'FlutterwaveController@callback');
 $router->post('/flutterwave/webhook', 'FlutterwaveController@webhook');
-$router->get('/checkout/success', 'FlutterwaveController@success', $auth);
 
 // Message Routing (Direct Chats)
 $router->get('/messages', 'MessageController@index', $auth);

@@ -259,14 +259,6 @@ class ProfileController extends Controller
             $destPath = $uploadDir . $newFileName;
 
             if (move_uploaded_file($file['tmp_name'], $destPath)) {
-                // Delete old avatar if replacing
-                $oldAvatar = $this->authUser()['avatar_url'] ?? '';
-                if (!empty($oldAvatar) && strpos($oldAvatar, '/uploads/avatars/') === 0) {
-                    $oldPath = PUBLIC_PATH . $oldAvatar;
-                    if (file_exists($oldPath)) {
-                        @unlink($oldPath);
-                    }
-                }
                 $updateData['avatar_url'] = '/uploads/avatars/' . $newFileName;
             } else {
                 $this->session->setFlash('error', 'Failed to save uploaded avatar.');
@@ -301,14 +293,6 @@ class ProfileController extends Controller
             $destPath = $uploadDir . $newFileName;
 
             if (move_uploaded_file($file['tmp_name'], $destPath)) {
-                // Delete old cover if replacing
-                $oldCover = $this->authUser()['cover_url'] ?? '';
-                if (!empty($oldCover) && strpos($oldCover, '/uploads/covers/') === 0) {
-                    $oldPath = PUBLIC_PATH . $oldCover;
-                    if (file_exists($oldPath)) {
-                        @unlink($oldPath);
-                    }
-                }
                 $updateData['cover_url'] = '/uploads/covers/' . $newFileName;
             } else {
                 $this->session->setFlash('error', 'Failed to save uploaded cover photo.');
