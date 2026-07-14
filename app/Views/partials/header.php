@@ -88,6 +88,17 @@ $currentPath = $_SERVER['REQUEST_URI'] ?? '/';
             transform: translateY(-1px);
         }
 
+        /* Smooth Profile Tab Content transitions */
+        .tab-content {
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+        }
+        .tab-content:not(.hidden) {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         /* Subtle Premium Animations & Liquid Glass effects */
         .liquid-glass {
             background: rgba(255, 255, 255, 0.65) !important;
@@ -172,7 +183,22 @@ if ($currentUser) {
     </a>
 
     <?php
-    $cartCount = count($session->get('cart', []));
+    $cartCount = 0;
+    if ($currentUser) {
+        try {
+            $db = \App\Core\Database::connect();
+            $stmtCartCount = $db->prepare("SELECT SUM(quantity) FROM shopping_cart WHERE user_id = :u");
+            $stmtCartCount->execute(['u' => $currentUser['id']]);
+            $cartCount = (int)$stmtCartCount->fetchColumn();
+        } catch (\Exception $e) {
+            $cartCount = 0;
+        }
+    } else {
+        $sessionCart = $session->get('cart', []);
+        foreach ($sessionCart as $item) {
+            $cartCount += isset($item['quantity']) ? (int)$item['quantity'] : 1;
+        }
+    }
     ?>
     <div class="space-y-1.5 flex-1">
         <a class="flex items-center space-x-4 px-4 py-3 rounded-full transition-all <?= $currentPath === '/' ? 'bg-[#004D40] text-white font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-[#F5F7F4] hover:text-[#004D40]' ?>" href="/">
@@ -270,7 +296,7 @@ if ($currentUser) {
 </nav>
 
 <!-- Main Area -->
-<main class="pt-20 md:pt-10 md:pl-72 max-w-4xl mx-auto px-5 md:px-8">
+<main class="pt-20 md:pt-10 md:pl-72 max-w-4xl xl:max-w-6xl 2xl:max-w-7xl mx-auto px-5 md:px-8">
 
     <!-- Flash Alerts -->
     <?php if ($session->getFlash('success')): ?>

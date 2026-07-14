@@ -2,7 +2,12 @@
 // Mimshack Application Configuration
 
 define('APP_NAME', 'Mimshack');
-define('APP_URL', 'http://localhost:8000'); // Can be updated based on environment
+
+// Dynamically detect current application URL (never hardcode localhost, 127.0.0.1, or fixed domains)
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || ($_SERVER['SERVER_PORT'] ?? 80) == 443 || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https') ? 'https' : 'http';
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost:8000';
+define('APP_URL', $protocol . '://' . $host);
+
 define('ROOT_PATH', dirname(__DIR__, 2));
 define('APP_PATH', dirname(__DIR__));
 define('PUBLIC_PATH', ROOT_PATH . '/public');

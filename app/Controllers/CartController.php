@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Models\Product;
 use App\Services\CommissionEngine;
+use App\Core\Database;
 
 class CartController extends Controller
 {
@@ -16,14 +17,61 @@ class CartController extends Controller
         $this->productModel = new Product();
     }
 
+    /**
+     * Helper to get synchronized cart list for current user or guest session
+     */
+    private function getCartItems(): array
+    {
+        $userId = $this->authId();
+        $cart = [];
+
+        if ($userId) {
+            // Load synchronized cart from the database shopping_cart table
+            $dbItems = $this->productModel->fetchAll(
+                "SELECT sc.product_id, sc.quantity, p.name, p.price, p.type, p.creator_id
+                 FROM shopping_cart sc
+                 JOIN products p ON sc.product_id = p.id
+                 WHERE sc.user_id = :user_id AND p.status = 'active'",
+                ['user_id' => $userId]
+            );
+
+            foreach ($dbItems as $item) {
+                $cart[(int)$item['product_id']] = [
+                    'id'          => (int)$item['product_id'],
+                    'name'        => $item['name'],
+                    'price'       => (float)$item['price'],
+                    'type'        => $item['type'],
+                    'creator_id'  => (int)$item['creator_id'],
+                    'quantity'    => (int)$item['quantity']
+                ];
+            }
+        } else {
+            // Load from guest session
+            $sessionCart = $this->session->get('cart', []);
+            foreach ($sessionCart as $pid => $item) {
+                $cart[(int)$pid] = [
+                    'id'          => (int)$item['id'],
+                    'name'        => $item['name'],
+                    'price'       => (float)$item['price'],
+                    'type'        => $item['type'],
+                    'creator_id'  => (int)$item['creator_id'],
+                    'quantity'    => isset($item['quantity']) ? (int)$item['quantity'] : 1
+                ];
+            }
+        }
+
+        return $cart;
+    }
+
     public function index(): void
     {
-        $cart = $this->session->get('cart', []);
+        $cart = $this->getCartItems();
 
-        // Calculate totals
+        // Calculate totals with quantities
         $subtotal = 0.00;
         foreach ($cart as $item) {
-            $subtotal += (float)$item['price'];
+            $qty = $item['quantity'];
+            $subtotal += (float)$item['price'] * $qty;
         }
 
         // Apply coupon if any
@@ -32,7 +80,6 @@ class CartController extends Controller
         $couponDetails = null;
 
         if ($couponCode) {
-            // Find coupon
             $couponDetails = $this->productModel->fetch(
                 "SELECT * FROM coupons WHERE code = :code",
                 ['code' => $couponCode]
@@ -77,16 +124,32 @@ class CartController extends Controller
         $product = $this->productModel->findById($productId);
 
         if ($product) {
-            $cart = $this->session->get('cart', []);
-            // Simple shopping cart - only digital products, duplicate prevention
-            $cart[$productId] = [
-                'id'          => $product['id'],
-                'name'        => $product['name'],
-                'price'       => $product['price'],
-                'type'        => $product['type'],
-                'creator_id'  => $product['creator_id']
-            ];
-            $this->session->set('cart', $cart);
+            $userId = $this->authId();
+            if ($userId) {
+                // Save to database
+                $this->productModel->query(
+                    "INSERT INTO shopping_cart (user_id, product_id, quantity)
+                     VALUES (:user_id, :product_id, 1)
+                     ON DUPLICATE KEY UPDATE quantity = quantity + 1",
+                    ['user_id' => $userId, 'product_id' => $productId]
+                );
+            } else {
+                // Save to guest session
+                $cart = $this->session->get('cart', []);
+                if (isset($cart[$productId])) {
+                    $cart[$productId]['quantity'] = (isset($cart[$productId]['quantity']) ? $cart[$productId]['quantity'] : 1) + 1;
+                } else {
+                    $cart[$productId] = [
+                        'id'          => $product['id'],
+                        'name'        => $product['name'],
+                        'price'       => $product['price'],
+                        'type'        => $product['type'],
+                        'creator_id'  => $product['creator_id'],
+                        'quantity'    => 1
+                    ];
+                }
+                $this->session->set('cart', $cart);
+            }
 
             // Log Checkout Start for Recommendation Analytics
             $refCode = $_COOKIE['referral_code'] ?? null;
@@ -115,16 +178,32 @@ class CartController extends Controller
         $product = $this->productModel->findById($productId);
 
         if ($product) {
-            $cart = $this->session->get('cart', []);
-            // Simple shopping cart - only digital products, duplicate prevention
-            $cart[$productId] = [
-                'id'          => $product['id'],
-                'name'        => $product['name'],
-                'price'       => $product['price'],
-                'type'        => $product['type'],
-                'creator_id'  => $product['creator_id']
-            ];
-            $this->session->set('cart', $cart);
+            $userId = $this->authId();
+            if ($userId) {
+                // Save to database
+                $this->productModel->query(
+                    "INSERT INTO shopping_cart (user_id, product_id, quantity)
+                     VALUES (:user_id, :product_id, 1)
+                     ON DUPLICATE KEY UPDATE quantity = quantity + 1",
+                    ['user_id' => $userId, 'product_id' => $productId]
+                );
+            } else {
+                // Save to session
+                $cart = $this->session->get('cart', []);
+                if (isset($cart[$productId])) {
+                    $cart[$productId]['quantity'] = (isset($cart[$productId]['quantity']) ? $cart[$productId]['quantity'] : 1) + 1;
+                } else {
+                    $cart[$productId] = [
+                        'id'          => $product['id'],
+                        'name'        => $product['name'],
+                        'price'       => $product['price'],
+                        'type'        => $product['type'],
+                        'creator_id'  => $product['creator_id'],
+                        'quantity'    => 1
+                    ];
+                }
+                $this->session->set('cart', $cart);
+            }
 
             // Log Checkout Start for Recommendation Analytics
             $refCode = $_COOKIE['referral_code'] ?? null;
@@ -138,7 +217,6 @@ class CartController extends Controller
                 }
             }
 
-            // Redirect directly to cart for instant checkout execution
             $this->redirect('/cart');
         } else {
             $this->session->setFlash('error', 'Product not found.');
@@ -150,14 +228,46 @@ class CartController extends Controller
     {
         $this->validateCsrf();
         $productId = (int)$this->request->get('product_id', 0);
-        $cart = $this->session->get('cart', []);
+        $userId = $this->authId();
 
-        if (isset($cart[$productId])) {
-            unset($cart[$productId]);
-            $this->session->set('cart', $cart);
-            $this->session->setFlash('success', 'Product removed from shopping cart.');
+        if ($userId) {
+            $this->productModel->query(
+                "DELETE FROM shopping_cart WHERE user_id = :user_id AND product_id = :product_id",
+                ['user_id' => $userId, 'product_id' => $productId]
+            );
+        } else {
+            $cart = $this->session->get('cart', []);
+            if (isset($cart[$productId])) {
+                unset($cart[$productId]);
+                $this->session->set('cart', $cart);
+            }
         }
 
+        $this->session->setFlash('success', 'Product removed from shopping cart.');
+        $this->redirect('/cart');
+    }
+
+    public function updateQuantity(): void
+    {
+        $this->validateCsrf();
+        $productId = (int)$this->request->get('product_id', 0);
+        $quantity = max(1, (int)$this->request->get('quantity', 1));
+        $userId = $this->authId();
+
+        if ($userId) {
+            $this->productModel->query(
+                "UPDATE shopping_cart SET quantity = :quantity WHERE user_id = :user_id AND product_id = :product_id",
+                ['quantity' => $quantity, 'user_id' => $userId, 'product_id' => $productId]
+            );
+        } else {
+            $cart = $this->session->get('cart', []);
+            if (isset($cart[$productId])) {
+                $cart[$productId]['quantity'] = $quantity;
+                $this->session->set('cart', $cart);
+            }
+        }
+
+        $this->session->setFlash('success', 'Cart quantity updated.');
         $this->redirect('/cart');
     }
 
@@ -172,7 +282,6 @@ class CartController extends Controller
             $this->redirect('/cart');
         }
 
-        // Validate coupon code in database
         $coupon = $this->productModel->fetch(
             "SELECT * FROM coupons WHERE code = :code AND (expires_at IS NULL OR expires_at > NOW())",
             ['code' => $code]
@@ -189,6 +298,9 @@ class CartController extends Controller
         $this->redirect('/cart');
     }
 
+    /**
+     * Initializes secure Flutterwave payment process instead of mock direct order completion.
+     */
     public function checkout(): void
     {
         $this->validateCsrf();
@@ -198,58 +310,60 @@ class CartController extends Controller
             $this->redirect('/auth/login');
         }
 
-        $cart = $this->session->get('cart', []);
+        $cart = $this->getCartItems();
         if (empty($cart)) {
             $this->session->setFlash('error', 'Your shopping cart is empty.');
             $this->redirect('/marketplace');
         }
 
-        // We will process the cart products sequentially.
-        // For each product, calculate discount, calculate platform fee, check referral cookies,
-        // create a completed order, and trigger the CommissionEngine.
+        $couponCode = $this->session->get('applied_coupon', null);
+        $couponId = null;
+        $discountPercent = 0;
+        $discountAmountPerItem = 0.00;
 
-        $db = \App\Core\Database::connect();
+        if ($couponCode) {
+            $coupon = $this->productModel->fetch("SELECT * FROM coupons WHERE code = :code", ['code' => $couponCode]);
+            if ($coupon) {
+                $couponId = (int)$coupon['id'];
+                $discountPercent = (int)($coupon['discount_percent'] ?? 0);
+                $discountAmountPerItem = (float)($coupon['discount_amount'] ?? 0.00);
+            }
+        }
+
+        $commissionSettings = $this->productModel->fetch("SELECT * FROM commission_settings WHERE id = 1");
+        $platformFeePercent = (float)($commissionSettings['platform_fee_percent'] ?? 5.00);
+
+        // Fetch active referral cookie code if present
+        $referralCode = $_COOKIE['referral_code'] ?? null;
+        $referrerId = null;
+
+        if ($referralCode) {
+            $refLink = $this->productModel->fetch("SELECT user_id FROM referral_links WHERE code = :code", ['code' => $referralCode]);
+            if ($refLink) {
+                $referrerId = (int)$refLink['user_id'];
+                if ($referrerId === $userId) {
+                    $referrerId = null;
+                }
+            }
+        }
+
+        // Initialize transaction reference
+        $txRef = 'mimshack_tx_' . bin2hex(random_bytes(10));
+
+        // Create entries in flutterwave_payments for verification flow
+        // To handle multi-item carts, we can charge the total final amount.
+        // Let's create an active payment intent in the DB for each item in the cart, referencing the same txRef!
+        $db = Database::connect();
 
         try {
             $db->beginTransaction();
 
-            $couponCode = $this->session->get('applied_coupon', null);
-            $couponId = null;
-            $discountPercent = 0;
-            $discountAmountPerItem = 0.00;
+            $totalCartPaymentAmount = 0.00;
 
-            if ($couponCode) {
-                $coupon = $this->productModel->fetch("SELECT * FROM coupons WHERE code = :code", ['code' => $couponCode]);
-                if ($coupon) {
-                    $couponId = (int)$coupon['id'];
-                    $discountPercent = (int)($coupon['discount_percent'] ?? 0);
-                    $discountAmountPerItem = (float)($coupon['discount_amount'] ?? 0.00);
-                }
-            }
-
-            // Configurable settings
-            $commissionSettings = $this->productModel->fetch("SELECT * FROM commission_settings WHERE id = 1");
-            $platformFeePercent = (float)($commissionSettings['platform_fee_percent'] ?? 5.00);
-
-            // Fetch active referral cookie code if present
-            $referralCode = $_COOKIE['referral_code'] ?? null;
-            $referrerId = null;
-
-            if ($referralCode) {
-                $refLink = $this->productModel->fetch("SELECT user_id FROM referral_links WHERE code = :code", ['code' => $referralCode]);
-                if ($refLink) {
-                    $referrerId = (int)$refLink['user_id'];
-                    // Prevent self-referral commission
-                    if ($referrerId === $userId) {
-                        $referrerId = null;
-                    }
-                }
-            }
-
-            $totalAmountPaid = 0.00;
             foreach ($cart as $item) {
                 $productId = (int)$item['id'];
-                $price = (float)$item['price'];
+                $qty = (int)$item['quantity'];
+                $price = (float)$item['price'] * $qty;
 
                 // Calculate final price with discounts
                 $discountApplied = 0.00;
@@ -260,93 +374,49 @@ class CartController extends Controller
                 }
 
                 $finalAmount = max(0.00, $price - $discountApplied);
-                $totalAmountPaid += ($finalAmount + ($finalAmount * ($platformFeePercent / 100)));
-
-                // Platform fee
                 $platformFee = $finalAmount * ($platformFeePercent / 100);
+                $chargeAmount = $finalAmount + $platformFee;
 
-                // Insert into orders
+                $totalCartPaymentAmount += $chargeAmount;
+
+                // Insert into flutterwave_payments as pending
                 $stmt = $db->prepare(
-                    "INSERT INTO orders (user_id, product_id, price, discount_applied, final_amount, platform_fee, status, referrer_id, coupon_id)
-                     VALUES (:user_id, :product_id, :price, :discount_applied, :final_amount, :platform_fee, 'completed', :referrer_id, :coupon_id)"
+                    "INSERT INTO flutterwave_payments (tx_ref, user_id, product_id, amount, currency, status, coupon_id, referrer_id)
+                     VALUES (:tx_ref, :user_id, :product_id, :amount, 'USD', 'pending', :coupon_id, :referrer_id)"
                 );
                 $stmt->execute([
-                    'user_id'          => $userId,
-                    'product_id'       => $productId,
-                    'price'            => $price,
-                    'discount_applied' => $discountApplied,
-                    'final_amount'     => $finalAmount,
-                    'platform_fee'     => $platformFee,
-                    'referrer_id'      => $referrerId,
-                    'coupon_id'        => $couponId
+                    'tx_ref'     => $txRef,
+                    'user_id'    => $userId,
+                    'product_id' => $productId,
+                    'amount'     => $chargeAmount,
+                    'coupon_id'  => $couponId,
+                    'referrer_id' => $referrerId
                 ]);
-
-                $orderId = (int)$db->lastInsertId();
-
-                // Track Successful Purchase for Recommendation Analytics
-                if ($referrerId) {
-                    $refLink = $this->productModel->fetch(
-                        "SELECT id FROM referral_links WHERE user_id = :user_id AND product_id = :product_id",
-                        ['user_id' => $referrerId, 'product_id' => $productId]
-                    );
-                    if ($refLink) {
-                        $this->productModel->trackRecommendationEvent((int)$refLink['id'], 'purchase');
-                    }
-                }
-
-                // Generate system notifications & log activity
-                $buyerName = $this->authUser()['full_name'];
-                $prodName = $item['name'];
-
-                // 1. Notify Creator of the Sale
-                $creatorNotificationMsg = "Great news! Your digital product '{$prodName}' was purchased by {$buyerName} for $" . number_format($finalAmount, 2) . ".";
-                $stmtNotify = $db->prepare("INSERT INTO notifications (user_id, type, source_id, content) VALUES (:user_id, 'sale', :source_id, :content)");
-                $stmtNotify->execute([
-                    'user_id'   => $item['creator_id'],
-                    'source_id' => $orderId,
-                    'content'   => $creatorNotificationMsg
-                ]);
-
-                // 2. Notify Buyer
-                $buyerNotificationMsg = "Thank you! Your purchase of '{$prodName}' is confirmed. You can now download it instantly from your profile or the product page.";
-                $stmtNotify->execute([
-                    'user_id'   => $userId,
-                    'source_id' => $orderId,
-                    'content'   => $buyerNotificationMsg
-                ]);
-
-                // Track and credit multi-level affiliate marketing commissions
-                CommissionEngine::processOrderCommissions($orderId);
             }
-
-            // Trigger automated purchase confirmation email
-            \App\Services\Mailer::sendPurchaseConfirmation(
-                $this->authUser()['email'],
-                $this->authUser()['full_name'],
-                $cart,
-                $totalAmountPaid
-            );
-
-            // Clear Cart and Cookies
-            $this->session->remove('cart');
-            $this->session->remove('applied_coupon');
-            setcookie('referral_code', '', time() - 3600, '/');
 
             $db->commit();
 
-            // Auto unlock Sales Partner status after purchasing any digital product
-            $this->productModel->query("UPDATE users SET is_sales_partner = 1 WHERE id = :id", ['id' => $userId]);
-            $refreshedUser = $this->productModel->fetch("SELECT * FROM users WHERE id = :id", ['id' => $userId]);
-            $this->session->set('user', $refreshedUser);
+            // Redirect user to our Flutterwave checkout simulator with tx_ref and dynamic site URL redirects
+            $dynamicUrl = $this->getDynamicSiteUrl();
+            $redirectUrl = $dynamicUrl . '/profile/' . $this->authUser()['username'];
 
-            $this->session->setFlash('success', 'Order completed successfully! Digital products are unlocked.');
-            $this->redirect('/profile/' . $refreshedUser['username']);
+            $this->redirect('/flutterwave/simulate-checkout?tx_ref=' . urlencode($txRef) . '&redirect=' . urlencode($redirectUrl));
 
         } catch (\Exception $e) {
             $db->rollBack();
-            error_log("Checkout error: " . $e->getMessage());
-            $this->session->setFlash('error', 'Checkout failed. Please try again.');
+            error_log("Payment initialization error: " . $e->getMessage());
+            $this->session->setFlash('error', 'Checkout initialization failed. Please try again.');
             $this->redirect('/cart');
         }
+    }
+
+    /**
+     * Helper to retrieve the current dynamic absolute host/domain URL
+     */
+    private function getDynamicSiteUrl(): string
+    {
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || ($_SERVER['SERVER_PORT'] ?? 80) == 443) ? "https" : "http";
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost:8000';
+        return $protocol . "://" . $host;
     }
 }

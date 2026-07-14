@@ -75,6 +75,9 @@ class AuthController extends Controller
         $createdUser = $this->userModel->findById($userId);
         $this->session->set('user', $createdUser);
 
+        // Merge guest cart to synchronized database cart
+        $this->mergeGuestCart($userId);
+
         // Trigger automated welcome mail
         \App\Services\Mailer::sendWelcomeEmail($email, $fullName, $username);
 
@@ -129,6 +132,9 @@ class AuthController extends Controller
         // Set session
         $this->session->set('user', $user);
 
+        // Merge guest cart to synchronized database cart
+        $this->mergeGuestCart($user['id']);
+
         // Handle "Remember Me"
         if ($remember) {
             $token = bin2hex(random_bytes(32));
@@ -143,6 +149,29 @@ class AuthController extends Controller
             $this->redirect('/admin/dashboard');
         } else {
             $this->redirect('/');
+        }
+    }
+
+    private function mergeGuestCart(int $userId): void
+    {
+        $guestCart = $this->session->get('cart', []);
+        if (!empty($guestCart)) {
+            $db = \App\Core\Database::connect();
+            foreach ($guestCart as $productId => $item) {
+                $qty = isset($item['quantity']) ? (int)$item['quantity'] : 1;
+                $stmt = $db->prepare(
+                    "INSERT INTO shopping_cart (user_id, product_id, quantity)
+                     VALUES (:user_id, :product_id, :quantity)
+                     ON DUPLICATE KEY UPDATE quantity = quantity + :quantity2"
+                );
+                $stmt->execute([
+                    'user_id'    => $userId,
+                    'product_id' => (int)$productId,
+                    'quantity'   => $qty,
+                    'quantity2'  => $qty
+                ]);
+            }
+            $this->session->remove('cart');
         }
     }
 
