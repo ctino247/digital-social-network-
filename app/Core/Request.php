@@ -34,18 +34,12 @@ class Request
         $body = [];
         if ($this->isGet()) {
             foreach ($_GET as $key => $value) {
-                $body[$key] = filter_input(INPUT_GET, $key, FILTER_SANITIZE_SPECIAL_CHARS);
+                $body[$key] = $value;
             }
         }
         if ($this->isPost()) {
             foreach ($_POST as $key => $value) {
-                if (is_array($value)) {
-                    $body[$key] = array_map(function($val) {
-                        return htmlspecialchars($val, ENT_QUOTES, 'UTF-8');
-                    }, $value);
-                } else {
-                    $body[$key] = filter_input(INPUT_POST, $key, FILTER_SANITIZE_SPECIAL_CHARS);
-                }
+                $body[$key] = $value;
             }
         }
         return $body;

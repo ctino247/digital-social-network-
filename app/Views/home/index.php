@@ -158,19 +158,19 @@ include ROOT_PATH . '/app/Views/partials/header.php';
 
                         <!-- Action Bar (Likes, replies, quotes, bookmarks) -->
                         <div class="flex items-center justify-between text-xs font-bold text-on-surface-variant border-t border-[#E0E6E2] pt-4 mt-2">
-                            <button onclick="toggleLike(<?= (int)$post['id'] ?>, this)" class="flex items-center space-x-2 <?= $post['is_liked'] ? 'text-[#004D40]' : 'hover:text-[#004D40]' ?> transition-all">
+                            <button onclick="toggleLike(<?= (int)$post['id'] ?>, this)" class="flex items-center space-x-2 <?= $post['is_liked'] ? 'text-primary' : 'hover:text-primary' ?> transition-all">
                                 <span class="material-symbols-outlined text-lg" style="<?= $post['is_liked'] ? "font-variation-settings: 'FILL' 1;" : "" ?>">favorite</span>
                                 <span><?= (int)$post['likes_count'] ?></span>
                             </button>
-                            <a href="/post/<?= (int)$post['id'] ?>" class="flex items-center space-x-2 hover:text-[#004D40] transition-all">
+                            <a href="/post/<?= (int)$post['id'] ?>" class="flex items-center space-x-2 hover:text-primary transition-all">
                                 <span class="material-symbols-outlined text-lg">chat_bubble</span>
                                 <span><?= (int)$post['replies_count'] ?></span>
                             </a>
-                            <a href="/post/create?quote_id=<?= (int)$post['id'] ?>" class="flex items-center space-x-2 hover:text-[#004D40] transition-all">
+                            <a href="/post/create?quote_id=<?= (int)$post['id'] ?>" class="flex items-center space-x-2 hover:text-primary transition-all">
                                 <span class="material-symbols-outlined text-lg">format_quote</span>
                                 <span>Quote</span>
                             </a>
-                            <button onclick="toggleBookmark(<?= (int)$post['id'] ?>, this)" class="flex items-center space-x-2 <?= $post['is_bookmarked'] ? 'text-[#004D40]' : 'hover:text-[#004D40]' ?> transition-all">
+                            <button onclick="toggleBookmark(<?= (int)$post['id'] ?>, this)" class="flex items-center space-x-2 <?= $post['is_bookmarked'] ? 'text-primary' : 'hover:text-primary' ?> transition-all">
                                 <span class="material-symbols-outlined text-lg" style="<?= $post['is_bookmarked'] ? "font-variation-settings: 'FILL' 1;" : "" ?>">bookmark</span>
                                 <span>Bookmark</span>
                             </button>
@@ -241,10 +241,10 @@ include ROOT_PATH . '/app/Views/partials/header.php';
                 const iconSpan = btn.querySelector('span:first-child');
                 countSpan.innerText = data.likesCount;
                 if (data.action === 'liked') {
-                    btn.classList.add('text-[#004D40]');
+                    btn.classList.add('text-primary');
                     iconSpan.style.fontVariationSettings = "'FILL' 1";
                 } else {
-                    btn.classList.remove('text-[#004D40]');
+                    btn.classList.remove('text-primary');
                     iconSpan.style.fontVariationSettings = "'FILL' 0";
                 }
             }
@@ -263,10 +263,10 @@ include ROOT_PATH . '/app/Views/partials/header.php';
             if (data.success) {
                 const iconSpan = btn.querySelector('span:first-child');
                 if (data.action === 'bookmarked') {
-                    btn.classList.add('text-[#004D40]');
+                    btn.classList.add('text-primary');
                     iconSpan.style.fontVariationSettings = "'FILL' 1";
                 } else {
-                    btn.classList.remove('text-[#004D40]');
+                    btn.classList.remove('text-primary');
                     iconSpan.style.fontVariationSettings = "'FILL' 0";
                 }
             }

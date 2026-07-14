@@ -7,7 +7,8 @@ class Security
     // Sanitize output for XSS prevention
     public static function escape(string $value): string
     {
-        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+        // Decode pre-existing HTML entities to prevent double-escaping, then escape securely for XSS protection.
+        return htmlspecialchars(html_entity_decode($value, ENT_QUOTES, 'UTF-8'), ENT_QUOTES, 'UTF-8');
     }
 
     // Short helper alias

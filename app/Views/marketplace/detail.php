@@ -229,15 +229,27 @@ $isCreator = ($currentUser && (int)$product['creator_id'] === (int)$currentUser[
                         <span>Download Files</span>
                     </a>
                 <?php else: ?>
-                    <form action="/cart/add" method="POST">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>"/>
-                        <input type="hidden" name="product_id" value="<?= (int)$product['id'] ?>"/>
+                    <div class="space-y-3">
+                        <form action="/cart/buy-now" method="POST">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>"/>
+                            <input type="hidden" name="product_id" value="<?= (int)$product['id'] ?>"/>
 
-                        <button type="submit" class="w-full py-4 bg-[#FFE500] text-[#004D40] font-extrabold rounded-full hover:bg-[#E6CE00] transition-colors flex justify-center items-center space-x-2 shadow-sm">
-                            <span class="material-symbols-outlined font-bold">shopping_cart</span>
-                            <span>Add to Cart</span>
-                        </button>
-                    </form>
+                            <button type="submit" class="w-full py-4 bg-[#FFE500] text-[#004D40] font-extrabold rounded-full hover:bg-[#E6CE00] transition-colors flex justify-center items-center space-x-2 shadow-sm">
+                                <span class="material-symbols-outlined font-bold">bolt</span>
+                                <span>Buy Now</span>
+                            </button>
+                        </form>
+
+                        <form action="/cart/add" method="POST">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>"/>
+                            <input type="hidden" name="product_id" value="<?= (int)$product['id'] ?>"/>
+
+                            <button type="submit" class="w-full py-3 border border-[#E0E6E2] hover:bg-[#F5F7F4] text-[#004D40] font-bold rounded-full transition-all flex justify-center items-center space-x-2 text-xs">
+                                <span class="material-symbols-outlined font-bold text-sm">shopping_cart</span>
+                                <span>Add to Cart</span>
+                            </button>
+                        </form>
+                    </div>
                 <?php endif; ?>
 
                 <!-- Creator Specific Buttons -->

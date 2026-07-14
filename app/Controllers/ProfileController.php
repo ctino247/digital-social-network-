@@ -178,21 +178,60 @@ class ProfileController extends Controller
             $this->redirect('/auth/login');
         }
 
+        $username = $this->authUser()['username'];
+
         $fullName = trim($this->request->get('full_name', ''));
         $bio = trim($this->request->get('bio', ''));
+        $website = trim($this->request->get('website', ''));
+        $occupation = trim($this->request->get('occupation', ''));
+        $country = trim($this->request->get('country', ''));
 
         if (empty($fullName)) {
             $this->session->setFlash('error', 'Full Name cannot be empty.');
-            $this->redirect('/profile/' . $this->authUser()['username']);
+            $this->redirect('/profile/' . $username);
         }
 
         $updateData = [
             'full_name' => $fullName,
-            'bio'       => $bio
+            'bio'       => $bio,
+            'website'   => $website,
+            'occupation'=> $occupation,
+            'country'   => $country
         ];
 
-        // Handle Avatar Upload securely
+        // Parse and serialize social links
+        $socialLinks = [
+            'twitter'   => trim($this->request->get('social_twitter', '')),
+            'instagram' => trim($this->request->get('social_instagram', '')),
+            'linkedin'  => trim($this->request->get('social_linkedin', ''))
+        ];
+        $updateData['social_links'] = json_encode($socialLinks);
+
+        // Parse and serialize preferences
+        $emailPrefs = [
+            'marketing'    => (int)$this->request->get('email_pref_marketing', 0),
+            'security'     => (int)$this->request->get('email_pref_security', 1),
+            'transactions' => (int)$this->request->get('email_pref_transactions', 1)
+        ];
+        $updateData['email_preferences'] = json_encode($emailPrefs);
+
+        $notifyPrefs = [
+            'likes'    => (int)$this->request->get('notify_pref_likes', 1),
+            'comments' => (int)$this->request->get('notify_pref_comments', 1),
+            'messages' => (int)$this->request->get('notify_pref_messages', 1),
+            'sales'    => (int)$this->request->get('notify_pref_sales', 1)
+        ];
+        $updateData['notification_settings'] = json_encode($notifyPrefs);
+
+        $privacyPrefs = [
+            'search_visible' => (int)$this->request->get('privacy_search_visible', 1),
+            'show_earnings'  => (int)$this->request->get('privacy_show_earnings', 0)
+        ];
+        $updateData['privacy_settings'] = json_encode($privacyPrefs);
+
         $files = $this->request->getFiles();
+
+        // Handle Avatar Upload securely
         if (isset($files['avatar']) && $files['avatar']['error'] === UPLOAD_ERR_OK) {
             $file = $files['avatar'];
             $allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
@@ -202,10 +241,14 @@ class ProfileController extends Controller
 
             if (!in_array($mime, $allowedTypes)) {
                 $this->session->setFlash('error', 'Invalid avatar format. Only JPG, PNG, WEBP are allowed.');
-                $this->redirect('/profile/' . $this->authUser()['username']);
+                $this->redirect('/profile/' . $username);
             }
 
-            // Create uploads directory if not exists
+            if ($file['size'] > 2 * 1024 * 1024) {
+                $this->session->setFlash('error', 'Avatar image size must be less than 2MB.');
+                $this->redirect('/profile/' . $username);
+            }
+
             $uploadDir = PUBLIC_PATH . '/uploads/avatars/';
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0755, true);
@@ -222,13 +265,74 @@ class ProfileController extends Controller
             }
         }
 
+        // Handle Cover Photo Upload securely
+        if (isset($files['cover']) && $files['cover']['error'] === UPLOAD_ERR_OK) {
+            $file = $files['cover'];
+            $allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime = finfo_file($finfo, $file['tmp_name']);
+            finfo_close($finfo);
+
+            if (!in_array($mime, $allowedTypes)) {
+                $this->session->setFlash('error', 'Invalid cover photo format. Only JPG, PNG, WEBP are allowed.');
+                $this->redirect('/profile/' . $username);
+            }
+
+            if ($file['size'] > 2 * 1024 * 1024) {
+                $this->session->setFlash('error', 'Cover photo size must be less than 2MB.');
+                $this->redirect('/profile/' . $username);
+            }
+
+            $uploadDir = PUBLIC_PATH . '/uploads/covers/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+
+            $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+            $newFileName = 'cover_' . $userId . '_' . time() . '.' . $extension;
+            $destPath = $uploadDir . $newFileName;
+
+            if (move_uploaded_file($file['tmp_name'], $destPath)) {
+                $updateData['cover_url'] = '/uploads/covers/' . $newFileName;
+            } else {
+                $this->session->setFlash('error', 'Failed to save uploaded cover photo.');
+            }
+        }
+
+        // Handle Password Change securely
+        $oldPassword = $this->request->get('old_password', '');
+        $newPassword = $this->request->get('new_password', '');
+        $confirmPassword = $this->request->get('confirm_password', '');
+
+        if (!empty($newPassword)) {
+            $userRecord = $this->userModel->findById($userId);
+            if (!password_verify($oldPassword, $userRecord['password_hash'])) {
+                $this->session->setFlash('error', 'Your current password was entered incorrectly.');
+                $this->redirect('/profile/' . $username);
+            }
+            if (strlen($newPassword) < 6) {
+                $this->session->setFlash('error', 'The new password must be at least 6 characters long.');
+                $this->redirect('/profile/' . $username);
+            }
+            if ($newPassword !== $confirmPassword) {
+                $this->session->setFlash('error', 'The new password and confirmation password do not match.');
+                $this->redirect('/profile/' . $username);
+            }
+
+            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+            $this->userModel->query("UPDATE users SET password_hash = :pwd WHERE id = :id", [
+                'pwd' => $hashedPassword,
+                'id' => $userId
+            ]);
+        }
+
         $this->userModel->updateProfile($userId, $updateData);
 
         // Refresh user session info
         $refreshedUser = $this->userModel->findById($userId);
         $this->session->set('user', $refreshedUser);
 
-        $this->session->setFlash('success', 'Profile updated successfully.');
+        $this->session->setFlash('success', 'Profile and settings updated successfully.');
         $this->redirect('/profile/' . $refreshedUser['username']);
     }
 

@@ -40,11 +40,11 @@ $currentPath = $_SERVER['REQUEST_URI'] ?? '/';
         <?php endif; ?>
     </a>
 
-    <!-- Notifications Tab -->
-    <a class="flex items-center justify-center transition-all duration-300 <?= strpos($currentPath, '/notifications') !== false ? 'bg-[#FFE500] text-[#004D40] px-5 py-2.5 rounded-full font-bold shadow-md scale-105' : 'text-white/70 hover:text-white' ?>" href="/notifications">
-        <span class="material-symbols-outlined" style="<?= strpos($currentPath, '/notifications') !== false ? "font-variation-settings: 'FILL' 1;" : "" ?>">notifications</span>
-        <?php if (strpos($currentPath, '/notifications') !== false): ?>
-            <span class="text-xs ml-2 font-bold">Alerts</span>
+    <!-- Messages Tab -->
+    <a class="flex items-center justify-center transition-all duration-300 <?= strpos($currentPath, '/messages') !== false ? 'bg-[#FFE500] text-[#004D40] px-5 py-2.5 rounded-full font-bold shadow-md scale-105' : 'text-white/70 hover:text-white' ?>" href="/messages">
+        <span class="material-symbols-outlined" style="<?= strpos($currentPath, '/messages') !== false ? "font-variation-settings: 'FILL' 1;" : "" ?>">chat</span>
+        <?php if (strpos($currentPath, '/messages') !== false): ?>
+            <span class="text-xs ml-2 font-bold">Chat</span>
         <?php endif; ?>
     </a>
 

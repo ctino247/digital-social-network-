@@ -162,6 +162,13 @@ class AdminController extends Controller
                 "INSERT INTO notifications (user_id, type, content) VALUES (:user_id, 'system', 'Your product \"" . htmlspecialchars($prod['name']) . "\" has been approved and is now active in the Marketplace!')",
                 ['user_id' => $prod['creator_id']]
             );
+
+            // Trigger retargeting launch emails to previous buyers
+            try {
+                \App\Services\Mailer::sendNewProductAlertToPreviousBuyers($id);
+            } catch (\Exception $e) {
+                error_log("Failed to send launch alert from admin: " . $e->getMessage());
+            }
         }
 
         $this->session->setFlash('success', "Product approved and listed successfully.");
@@ -230,11 +237,10 @@ class AdminController extends Controller
 
             // Update transaction logs
             $this->userModel->query(
-                "UPDATE transactions SET status = 'completed' WHERE wallet_id = :user_id AND amount = :amount AND type = 'withdrawal' AND status = 'pending'",
-                [
-                    'user_id' => $w['user_id'],
-                    'amount'  => -$w['amount']
-                ]
+                "UPDATE transactions SET status = 'completed'
+                 WHERE wallet_id = :user_id AND type = 'withdrawal' AND status = 'pending'
+                 ORDER BY created_at DESC LIMIT 1",
+                ['user_id' => $w['user_id']]
             );
 
             // Send system notifications
@@ -275,11 +281,10 @@ class AdminController extends Controller
 
             // Cancel the transaction record
             $this->userModel->query(
-                "UPDATE transactions SET status = 'failed' WHERE wallet_id = :user_id AND amount = :amount AND type = 'withdrawal' AND status = 'pending'",
-                [
-                    'user_id' => $w['user_id'],
-                    'amount'  => -$w['amount']
-                ]
+                "UPDATE transactions SET status = 'failed'
+                 WHERE wallet_id = :user_id AND type = 'withdrawal' AND status = 'pending'
+                 ORDER BY created_at DESC LIMIT 1",
+                ['user_id' => $w['user_id']]
             );
 
             // Send notifications

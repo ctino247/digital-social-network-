@@ -114,21 +114,26 @@ class CreatorController extends Controller
             $slug = strtolower(preg_replace('/[^a-zA-Z0-9\-]+/', '-', $name)) . '-' . rand(1000, 9999);
 
             // Save in Database
-            $this->productModel->query(
+            $db = \App\Core\Database::connect();
+            $stmt = $db->prepare(
                 "INSERT INTO products (creator_id, category_id, name, slug, description, type, price, file_path, file_name, status)
-                 VALUES (:creator_id, :category_id, :name, :slug, :description, :type, :price, :file_path, :file_name, 'active')", // Auto active for simplicity of review/approval in tests, can be set to pending as per config
-                [
-                    'creator_id'  => $userId,
-                    'category_id' => $categoryId,
-                    'name'        => $name,
-                    'slug'        => $slug,
-                    'description' => $description,
-                    'type'        => $type,
-                    'price'       => $price,
-                    'file_path'   => $uniqueName,
-                    'file_name'   => $file['name']
-                ]
+                 VALUES (:creator_id, :category_id, :name, :slug, :description, :type, :price, :file_path, :file_name, 'active')"
             );
+            $stmt->execute([
+                'creator_id'  => $userId,
+                'category_id' => $categoryId,
+                'name'        => $name,
+                'slug'        => $slug,
+                'description' => $description,
+                'type'        => $type,
+                'price'       => $price,
+                'file_path'   => $uniqueName,
+                'file_name'   => $file['name']
+            ]);
+            $productId = (int)$db->lastInsertId();
+
+            // Trigger retargeting launch emails to previous buyers
+            \App\Services\Mailer::sendNewProductAlertToPreviousBuyers($productId);
 
             $this->session->setFlash('success', "Digital product '{$name}' has been uploaded and listed successfully!");
             $this->redirect('/creator/dashboard');

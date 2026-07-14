@@ -53,6 +53,7 @@ $router->get('/recommendation/{code}/analytics', 'MarketplaceController@recommen
 // Cart & Checkout Routing
 $router->get('/cart', 'CartController@index');
 $router->post('/cart/add', 'CartController@add');
+$router->post('/cart/buy-now', 'CartController@buyNow');
 $router->post('/cart/remove', 'CartController@remove');
 $router->post('/cart/coupon', 'CartController@applyCoupon');
 $router->post('/cart/checkout', 'CartController@checkout', $auth);

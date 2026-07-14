@@ -69,29 +69,25 @@ class User extends Model
 
     public function updateProfile(int $id, array $data): void
     {
-        $sql = "UPDATE users SET full_name = :full_name, bio = :bio";
-        $params = [
-            'id'        => $id,
-            'full_name' => $data['full_name'],
-            'bio'       => $data['bio']
+        $allowedKeys = [
+            'full_name', 'bio', 'avatar_url', 'cover_url', 'role', 'is_sales_partner',
+            'website', 'occupation', 'country', 'social_links', 'email_preferences',
+            'notification_settings', 'privacy_settings'
         ];
 
-        if (isset($data['avatar_url'])) {
-            $sql .= ", avatar_url = :avatar_url";
-            $params['avatar_url'] = $data['avatar_url'];
+        $sets = [];
+        $params = ['id' => $id];
+
+        foreach ($data as $key => $val) {
+            if (in_array($key, $allowedKeys)) {
+                $sets[] = "{$key} = :{$key}";
+                $params[$key] = $val;
+            }
         }
 
-        if (isset($data['role'])) {
-            $sql .= ", role = :role";
-            $params['role'] = $data['role'];
-        }
+        if (empty($sets)) return;
 
-        if (isset($data['is_sales_partner'])) {
-            $sql .= ", is_sales_partner = :is_sales_partner";
-            $params['is_sales_partner'] = $data['is_sales_partner'];
-        }
-
-        $sql .= " WHERE id = :id";
+        $sql = "UPDATE users SET " . implode(", ", $sets) . " WHERE id = :id";
         $this->query($sql, $params);
     }
 

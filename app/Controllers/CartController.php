@@ -108,6 +108,44 @@ class CartController extends Controller
         $this->redirect('/cart');
     }
 
+    public function buyNow(): void
+    {
+        $this->validateCsrf();
+        $productId = (int)$this->request->get('product_id', 0);
+        $product = $this->productModel->findById($productId);
+
+        if ($product) {
+            $cart = $this->session->get('cart', []);
+            // Simple shopping cart - only digital products, duplicate prevention
+            $cart[$productId] = [
+                'id'          => $product['id'],
+                'name'        => $product['name'],
+                'price'       => $product['price'],
+                'type'        => $product['type'],
+                'creator_id'  => $product['creator_id']
+            ];
+            $this->session->set('cart', $cart);
+
+            // Log Checkout Start for Recommendation Analytics
+            $refCode = $_COOKIE['referral_code'] ?? null;
+            if ($refCode) {
+                $refLink = $this->productModel->fetch(
+                    "SELECT id FROM referral_links WHERE code = :code AND product_id = :p_id",
+                    ['code' => $refCode, 'p_id' => $productId]
+                );
+                if ($refLink) {
+                    $this->productModel->trackRecommendationEvent((int)$refLink['id'], 'checkout_start');
+                }
+            }
+
+            // Redirect directly to cart for instant checkout execution
+            $this->redirect('/cart');
+        } else {
+            $this->session->setFlash('error', 'Product not found.');
+            $this->redirect('/marketplace');
+        }
+    }
+
     public function remove(): void
     {
         $this->validateCsrf();

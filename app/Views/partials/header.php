@@ -87,11 +87,60 @@ $currentPath = $_SERVER['REQUEST_URI'] ?? '/';
             background-color: #E6CE00;
             transform: translateY(-1px);
         }
+
+        /* Subtle Premium Animations & Liquid Glass effects */
+        .liquid-glass {
+            background: rgba(255, 255, 255, 0.65) !important;
+            backdrop-filter: blur(16px) saturate(120%) !important;
+            -webkit-backdrop-filter: blur(16px) saturate(120%) !important;
+            border: 1px solid rgba(255, 255, 255, 0.5) !important;
+            box-shadow: 0 8px 32px 0 rgba(0, 77, 64, 0.05) !important;
+        }
+
+        .skeleton-pulse {
+            background: linear-gradient(90deg, #EBF0EC 25%, #F5F7F4 50%, #EBF0EC 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite ease-in-out;
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Luxurious smooth slide-in for alerts/cards */
+        .slide-up {
+            animation: slide-up-anim 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slide-up-anim {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body class="bg-[#F5F7F4] text-on-background min-h-screen pb-24 md:pb-0">
 
 <!-- Mobile Header -->
+<?php
+$unreadCount = 0;
+if ($currentUser) {
+    try {
+        $db = \App\Core\Database::connect();
+        $stmtUnread = $db->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = :u AND is_read = 0");
+        $stmtUnread->execute(['u' => $currentUser['id']]);
+        $unreadCount = (int)$stmtUnread->fetchColumn();
+    } catch (\Exception $e) {
+        $unreadCount = 0;
+    }
+}
+?>
 <header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-white/90 backdrop-blur-xl border-b border-[#E0E6E2] md:hidden">
     <a href="/" class="text-2xl font-bold tracking-tight text-[#004D40] flex items-center space-x-2">
         <span class="w-2.5 h-6 bg-[#FFE500] rounded-full inline-block"></span>
@@ -99,6 +148,13 @@ $currentPath = $_SERVER['REQUEST_URI'] ?? '/';
     </a>
     <div class="flex items-center space-x-4">
         <?php if ($currentUser): ?>
+            <!-- Top Mobile Notification Bell -->
+            <a href="/notifications" class="text-[#004D40] hover:scale-105 transition-transform relative flex items-center">
+                <span class="material-symbols-outlined font-bold" style="<?= strpos($currentPath, '/notifications') !== false ? "font-variation-settings: 'FILL' 1;" : "" ?>">notifications</span>
+                <?php if ($unreadCount > 0): ?>
+                    <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                <?php endif; ?>
+            </a>
             <a href="/profile/<?= Security::e($currentUser['username']) ?>" class="text-[#004D40] hover:scale-105 transition-transform">
                 <span class="material-symbols-outlined font-bold">person</span>
             </a>
@@ -115,6 +171,9 @@ $currentPath = $_SERVER['REQUEST_URI'] ?? '/';
         <span>Mimshack</span>
     </a>
 
+    <?php
+    $cartCount = count($session->get('cart', []));
+    ?>
     <div class="space-y-1.5 flex-1">
         <a class="flex items-center space-x-4 px-4 py-3 rounded-full transition-all <?= $currentPath === '/' ? 'bg-[#004D40] text-white font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-[#F5F7F4] hover:text-[#004D40]' ?>" href="/">
             <span class="material-symbols-outlined" style="<?= $currentPath === '/' ? "font-variation-settings: 'FILL' 1;" : "" ?>">home</span>
@@ -128,6 +187,15 @@ $currentPath = $_SERVER['REQUEST_URI'] ?? '/';
             <span class="material-symbols-outlined" style="<?= strpos($currentPath, '/marketplace') !== false ? "font-variation-settings: 'FILL' 1;" : "" ?>">shopping_bag</span>
             <span>Marketplace</span>
         </a>
+        <a class="flex items-center space-x-4 px-4 py-3 rounded-full transition-all <?= strpos($currentPath, '/cart') !== false ? 'bg-[#004D40] text-white font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-[#F5F7F4] hover:text-[#004D40]' ?>" href="/cart">
+            <span class="material-symbols-outlined relative" style="<?= strpos($currentPath, '/cart') !== false ? "font-variation-settings: 'FILL' 1;" : "" ?>">
+                shopping_cart
+                <?php if ($cartCount > 0): ?>
+                    <span class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-[9px] font-extrabold flex items-center justify-center border-2 border-white"><?= $cartCount ?></span>
+                <?php endif; ?>
+            </span>
+            <span>Cart</span>
+        </a>
 
         <?php if ($currentUser): ?>
             <a class="flex items-center space-x-4 px-4 py-3 rounded-full transition-all <?= strpos($currentPath, '/messages') !== false ? 'bg-[#004D40] text-white font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-[#F5F7F4] hover:text-[#004D40]' ?>" href="/messages">
@@ -135,7 +203,12 @@ $currentPath = $_SERVER['REQUEST_URI'] ?? '/';
                 <span>Messages</span>
             </a>
             <a class="flex items-center space-x-4 px-4 py-3 rounded-full transition-all <?= strpos($currentPath, '/notifications') !== false ? 'bg-[#004D40] text-white font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-[#F5F7F4] hover:text-[#004D40]' ?>" href="/notifications">
-                <span class="material-symbols-outlined" style="<?= strpos($currentPath, '/notifications') !== false ? "font-variation-settings: 'FILL' 1;" : "" ?>">notifications</span>
+                <span class="material-symbols-outlined relative" style="<?= strpos($currentPath, '/notifications') !== false ? "font-variation-settings: 'FILL' 1;" : "" ?>">
+                    notifications
+                    <?php if ($unreadCount > 0): ?>
+                        <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></span>
+                    <?php endif; ?>
+                </span>
                 <span>Notifications</span>
             </a>
             <a class="flex items-center space-x-4 px-4 py-3 rounded-full transition-all <?= strpos($currentPath, '/profile/' . $currentUser['username']) !== false ? 'bg-[#004D40] text-white font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-[#F5F7F4] hover:text-[#004D40]' ?>" href="/profile/<?= Security::e($currentUser['username']) ?>">
