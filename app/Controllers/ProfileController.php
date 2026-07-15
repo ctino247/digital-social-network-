@@ -336,6 +336,124 @@ class ProfileController extends Controller
         $this->redirect('/profile/' . $refreshedUser['username']);
     }
 
+    public function updateAvatarAjax(): void
+    {
+        $this->validateCsrf();
+        $userId = $this->authId();
+        if (!$userId) {
+            $this->json(['success' => false, 'error' => 'Not authenticated.'], 401);
+            return;
+        }
+
+        $files = $this->request->getFiles();
+        if (!isset($files['avatar']) || $files['avatar']['error'] !== UPLOAD_ERR_OK) {
+            $this->json(['success' => false, 'error' => 'No file uploaded or upload error occurred.'], 400);
+            return;
+        }
+
+        $file = $files['avatar'];
+        $allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+
+        if (!in_array($mime, $allowedTypes)) {
+            $this->json(['success' => false, 'error' => 'Invalid avatar format. Only JPG, PNG, WEBP are allowed.'], 400);
+            return;
+        }
+
+        if ($file['size'] > 2 * 1024 * 1024) {
+            $this->json(['success' => false, 'error' => 'Avatar image size must be less than 2MB.'], 400);
+            return;
+        }
+
+        $uploadDir = PUBLIC_PATH . '/uploads/avatars/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $newFileName = 'avatar_' . $userId . '_' . time() . '.' . $extension;
+        $destPath = $uploadDir . $newFileName;
+
+        if (move_uploaded_file($file['tmp_name'], $destPath)) {
+            $avatarUrl = '/uploads/avatars/' . $newFileName;
+
+            // Save to DB
+            $this->userModel->query("UPDATE users SET avatar_url = :url WHERE id = :id", [
+                'url' => $avatarUrl,
+                'id'  => $userId
+            ]);
+
+            // Refresh user session info
+            $refreshedUser = $this->userModel->findById($userId);
+            $this->session->set('user', $refreshedUser);
+
+            $this->json(['success' => true, 'url' => $avatarUrl]);
+        } else {
+            $this->json(['success' => false, 'error' => 'Failed to save uploaded avatar file on server.'], 500);
+        }
+    }
+
+    public function updateCoverAjax(): void
+    {
+        $this->validateCsrf();
+        $userId = $this->authId();
+        if (!$userId) {
+            $this->json(['success' => false, 'error' => 'Not authenticated.'], 401);
+            return;
+        }
+
+        $files = $this->request->getFiles();
+        if (!isset($files['cover']) || $files['cover']['error'] !== UPLOAD_ERR_OK) {
+            $this->json(['success' => false, 'error' => 'No file uploaded or upload error occurred.'], 400);
+            return;
+        }
+
+        $file = $files['cover'];
+        $allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+
+        if (!in_array($mime, $allowedTypes)) {
+            $this->json(['success' => false, 'error' => 'Invalid cover image format. Only JPG, PNG, WEBP are allowed.'], 400);
+            return;
+        }
+
+        if ($file['size'] > 2 * 1024 * 1024) {
+            $this->json(['success' => false, 'error' => 'Cover image size must be less than 2MB.'], 400);
+            return;
+        }
+
+        $uploadDir = PUBLIC_PATH . '/uploads/covers/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $newFileName = 'cover_' . $userId . '_' . time() . '.' . $extension;
+        $destPath = $uploadDir . $newFileName;
+
+        if (move_uploaded_file($file['tmp_name'], $destPath)) {
+            $coverUrl = '/uploads/covers/' . $newFileName;
+
+            // Save to DB
+            $this->userModel->query("UPDATE users SET cover_url = :url WHERE id = :id", [
+                'url' => $coverUrl,
+                'id'  => $userId
+            ]);
+
+            // Refresh user session info
+            $refreshedUser = $this->userModel->findById($userId);
+            $this->session->set('user', $refreshedUser);
+
+            $this->json(['success' => true, 'url' => $coverUrl]);
+        } else {
+            $this->json(['success' => false, 'error' => 'Failed to save uploaded cover file on server.'], 500);
+        }
+    }
+
     public function follow(int $id): void
     {
         $this->validateCsrf();

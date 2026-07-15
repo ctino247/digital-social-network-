@@ -11,3 +11,131 @@
 [Tue Jul 14 07:33:09 2026] 127.0.0.1:33478 Accepted
 [Tue Jul 14 07:33:09 2026] 127.0.0.1:33478 [200]: GET /
 [Tue Jul 14 07:33:09 2026] 127.0.0.1:33478 Closing
+[Wed Jul 15 00:11:47 2026] 127.0.0.1:59588 Accepted
+[Wed Jul 15 00:11:47 2026] 127.0.0.1:59588 [200]: GET /auth/login
+[Wed Jul 15 00:11:47 2026] 127.0.0.1:59588 Closing
+[Wed Jul 15 00:11:50 2026] 127.0.0.1:45514 Accepted
+[Wed Jul 15 00:11:50 2026] 127.0.0.1:45514 [302]: POST /auth/login
+[Wed Jul 15 00:11:50 2026] 127.0.0.1:45514 Closing
+[Wed Jul 15 00:11:50 2026] 127.0.0.1:45520 Accepted
+[Wed Jul 15 00:11:50 2026] 127.0.0.1:45520 [200]: GET /admin/dashboard
+[Wed Jul 15 00:11:50 2026] 127.0.0.1:45520 Closing
+[Wed Jul 15 00:11:53 2026] 127.0.0.1:45528 Accepted
+[Wed Jul 15 00:11:53 2026] PHP Fatal error:  Uncaught ErrorException: http_response_code(): Cannot set response code - headers already sent (output started at /app/app/Views/partials/header.php:12) in /app/app/Core/ErrorHandler.php:22
+Stack trace:
+#0 [internal function]: App\Core\ErrorHandler::handleError()
+#1 /app/app/Core/ErrorHandler.php(22): http_response_code()
+#2 [internal function]: App\Core\ErrorHandler::handleException()
+#3 {main}
+  thrown in /app/app/Core/ErrorHandler.php on line 22
+[Wed Jul 15 00:11:53 2026] 127.0.0.1:45528 [200]: GET /profile/admin - Uncaught ErrorException: http_response_code(): Cannot set response code - headers already sent (output started at /app/app/Views/partials/header.php:12) in /app/app/Core/ErrorHandler.php:22
+Stack trace:
+#0 [internal function]: App\Core\ErrorHandler::handleError()
+#1 /app/app/Core/ErrorHandler.php(22): http_response_code()
+#2 [internal function]: App\Core\ErrorHandler::handleException()
+#3 {main}
+  thrown in /app/app/Core/ErrorHandler.php on line 22
+[Wed Jul 15 00:11:53 2026] 127.0.0.1:45528 Closing
+[Wed Jul 15 00:46:19 2026] 127.0.0.1:44428 Accepted
+[Wed Jul 15 00:46:20 2026] 127.0.0.1:44428 [200]: GET /auth/login
+[Wed Jul 15 00:46:20 2026] 127.0.0.1:44428 Closing
+[Wed Jul 15 00:46:22 2026] 127.0.0.1:44434 Accepted
+[Wed Jul 15 00:46:22 2026] 127.0.0.1:44434 [302]: POST /auth/login
+[Wed Jul 15 00:46:22 2026] 127.0.0.1:44434 Closing
+[Wed Jul 15 00:46:22 2026] 127.0.0.1:44442 Accepted
+[Wed Jul 15 00:46:22 2026] 127.0.0.1:44442 [200]: GET /admin/dashboard
+[Wed Jul 15 00:46:22 2026] 127.0.0.1:44442 Closing
+[Wed Jul 15 00:52:00 2026] 127.0.0.1:50892 Accepted
+[Wed Jul 15 00:52:00 2026] 127.0.0.1:50892 [200]: GET /auth/login
+[Wed Jul 15 00:52:00 2026] 127.0.0.1:50892 Closing
+[Wed Jul 15 00:52:03 2026] 127.0.0.1:50898 Accepted
+[Wed Jul 15 00:52:03 2026] 127.0.0.1:50898 [302]: POST /auth/login
+[Wed Jul 15 00:52:03 2026] 127.0.0.1:50898 Closing
+[Wed Jul 15 00:52:03 2026] 127.0.0.1:50904 Accepted
+[Wed Jul 15 00:52:03 2026] 127.0.0.1:50904 [200]: GET /admin/dashboard
+[Wed Jul 15 00:52:03 2026] 127.0.0.1:50904 Closing
+[Wed Jul 15 00:52:04 2026] 127.0.0.1:50914 Accepted
+[Wed Jul 15 00:52:04 2026] 127.0.0.1:50914 [200]: GET /marketplace
+[Wed Jul 15 00:52:04 2026] 127.0.0.1:50914 Closing
+[Wed Jul 15 00:52:06 2026] 127.0.0.1:50918 Accepted
+[Wed Jul 15 00:52:06 2026] 127.0.0.1:50918 [200]: GET /product/ai-prompts-pro-packet
+[Wed Jul 15 00:52:06 2026] 127.0.0.1:50918 Closing
+[Wed Jul 15 00:52:07 2026] 127.0.0.1:50932 Accepted
+[Wed Jul 15 00:52:07 2026] 127.0.0.1:50932 [302]: POST /cart/add
+[Wed Jul 15 00:52:07 2026] 127.0.0.1:50932 Closing
+[Wed Jul 15 00:52:07 2026] 127.0.0.1:50946 Accepted
+[Wed Jul 15 00:52:07 2026] 127.0.0.1:50946 [200]: GET /cart
+[Wed Jul 15 00:52:07 2026] 127.0.0.1:50946 Closing
+[Wed Jul 15 00:52:08 2026] 127.0.0.1:56814 Accepted
+[Wed Jul 15 00:52:08 2026] 127.0.0.1:56814 [302]: POST /cart/checkout
+[Wed Jul 15 00:52:08 2026] 127.0.0.1:56814 Closing
+[Wed Jul 15 00:52:08 2026] 127.0.0.1:56820 Accepted
+[Wed Jul 15 00:52:08 2026] 127.0.0.1:56820 [200]: GET /flutterwave/simulate-checkout?tx_ref=tx_8d0c22e5cb0e5a3327d6&redirect=http%3A%2F%2Flocalhost%3A8000%2Fflutterwave%2Fcallback
+[Wed Jul 15 00:52:08 2026] 127.0.0.1:56820 Closing
+[Wed Jul 15 00:52:10 2026] 127.0.0.1:56836 Accepted
+[Wed Jul 15 00:52:10 2026] 127.0.0.1:56836 [302]: POST /flutterwave/process-simulation
+[Wed Jul 15 00:52:10 2026] 127.0.0.1:56836 Closing
+[Wed Jul 15 00:52:10 2026] 127.0.0.1:56842 Accepted
+sh: 1: /usr/sbin/sendmail: not found
+sh: 1: /usr/sbin/sendmail: not found
+[Wed Jul 15 00:52:10 2026] 127.0.0.1:56842 [302]: GET /flutterwave/callback?status=successful&tx_ref=tx_8d0c22e5cb0e5a3327d6&transaction_id=flw_tx_b52bdf9fd941
+[Wed Jul 15 00:52:10 2026] 127.0.0.1:56842 Closing
+[Wed Jul 15 00:52:10 2026] 127.0.0.1:56858 Accepted
+[Wed Jul 15 00:52:10 2026] 127.0.0.1:56858 [302]: GET /wallet
+[Wed Jul 15 00:52:10 2026] 127.0.0.1:56858 Closing
+[Wed Jul 15 00:52:10 2026] 127.0.0.1:56874 Accepted
+[Wed Jul 15 00:52:10 2026] 127.0.0.1:56874 [200]: GET /auth/login
+[Wed Jul 15 00:52:10 2026] 127.0.0.1:56874 Closing
+[Wed Jul 15 00:54:41 2026] 127.0.0.1:39626 Accepted
+[Wed Jul 15 00:54:41 2026] 127.0.0.1:39626 [200]: GET /auth/login
+[Wed Jul 15 00:54:41 2026] 127.0.0.1:39626 Closing
+[Wed Jul 15 00:54:44 2026] 127.0.0.1:39642 Accepted
+[Wed Jul 15 00:54:44 2026] 127.0.0.1:39642 [302]: POST /auth/login
+[Wed Jul 15 00:54:44 2026] 127.0.0.1:39642 Closing
+[Wed Jul 15 00:54:44 2026] 127.0.0.1:39658 Accepted
+[Wed Jul 15 00:54:44 2026] 127.0.0.1:39658 [200]: GET /admin/dashboard
+[Wed Jul 15 00:54:44 2026] 127.0.0.1:39658 Closing
+[Wed Jul 15 00:54:45 2026] 127.0.0.1:39664 Accepted
+[Wed Jul 15 00:54:45 2026] 127.0.0.1:39664 [200]: GET /marketplace
+[Wed Jul 15 00:54:45 2026] 127.0.0.1:39664 Closing
+[Wed Jul 15 00:54:46 2026] 127.0.0.1:39666 Accepted
+[Wed Jul 15 00:54:46 2026] 127.0.0.1:39666 [200]: GET /product/ai-prompts-pro-packet
+[Wed Jul 15 00:54:46 2026] 127.0.0.1:39666 Closing
+[Wed Jul 15 00:59:35 2026] 127.0.0.1:40708 Accepted
+[Wed Jul 15 00:59:35 2026] 127.0.0.1:40708 [200]: GET /auth/login
+[Wed Jul 15 00:59:35 2026] 127.0.0.1:40708 Closing
+[Wed Jul 15 00:59:38 2026] 127.0.0.1:40710 Accepted
+[Wed Jul 15 00:59:38 2026] 127.0.0.1:40710 [302]: POST /auth/login
+[Wed Jul 15 00:59:38 2026] 127.0.0.1:40710 Closing
+[Wed Jul 15 00:59:38 2026] 127.0.0.1:40716 Accepted
+[Wed Jul 15 00:59:38 2026] 127.0.0.1:40716 [200]: GET /admin/dashboard
+[Wed Jul 15 00:59:38 2026] 127.0.0.1:40716 Closing
+[Wed Jul 15 00:59:39 2026] 127.0.0.1:48894 Accepted
+[Wed Jul 15 00:59:39 2026] 127.0.0.1:48894 [200]: GET /marketplace
+[Wed Jul 15 00:59:39 2026] 127.0.0.1:48894 Closing
+[Wed Jul 15 00:59:40 2026] 127.0.0.1:48904 Accepted
+[Wed Jul 15 00:59:40 2026] 127.0.0.1:48904 [200]: GET /product/ai-prompts-pro-packet
+[Wed Jul 15 00:59:40 2026] 127.0.0.1:48904 Closing
+[Wed Jul 15 00:59:41 2026] 127.0.0.1:48910 Accepted
+[Wed Jul 15 00:59:41 2026] 127.0.0.1:48910 [302]: POST /cart/add
+[Wed Jul 15 00:59:41 2026] 127.0.0.1:48910 Closing
+[Wed Jul 15 00:59:41 2026] 127.0.0.1:48920 Accepted
+[Wed Jul 15 00:59:41 2026] 127.0.0.1:48920 [200]: GET /cart
+[Wed Jul 15 00:59:41 2026] 127.0.0.1:48920 Closing
+[Wed Jul 15 00:59:42 2026] 127.0.0.1:48928 Accepted
+[Wed Jul 15 00:59:42 2026] 127.0.0.1:48928 [302]: POST /cart/checkout
+[Wed Jul 15 00:59:42 2026] 127.0.0.1:48928 Closing
+[Wed Jul 15 00:59:42 2026] 127.0.0.1:48932 Accepted
+[Wed Jul 15 00:59:42 2026] 127.0.0.1:48932 [200]: GET /flutterwave/simulate-checkout?tx_ref=tx_3cac5d283ffe6bd7110a&redirect=http%3A%2F%2Flocalhost%3A8000%2Fflutterwave%2Fcallback
+[Wed Jul 15 00:59:42 2026] 127.0.0.1:48932 Closing
+[Wed Jul 15 00:59:44 2026] 127.0.0.1:48934 Accepted
+[Wed Jul 15 00:59:44 2026] 127.0.0.1:48934 [302]: POST /flutterwave/process-simulation
+[Wed Jul 15 00:59:44 2026] 127.0.0.1:48934 Closing
+[Wed Jul 15 00:59:44 2026] 127.0.0.1:48944 Accepted
+sh: 1: /usr/sbin/sendmail: not found
+sh: 1: /usr/sbin/sendmail: not found
+[Wed Jul 15 00:59:44 2026] 127.0.0.1:48944 [302]: GET /flutterwave/callback?status=successful&tx_ref=tx_3cac5d283ffe6bd7110a&transaction_id=flw_tx_1d1d106fbb37
+[Wed Jul 15 00:59:44 2026] 127.0.0.1:48944 Closing
+[Wed Jul 15 00:59:44 2026] 127.0.0.1:48946 Accepted
+[Wed Jul 15 00:59:44 2026] 127.0.0.1:48946 [200]: GET /wallet
+[Wed Jul 15 00:59:44 2026] 127.0.0.1:48946 Closing

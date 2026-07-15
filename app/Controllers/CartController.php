@@ -16,9 +16,48 @@ class CartController extends Controller
         $this->productModel = new Product();
     }
 
+    private function getCart(): array
+    {
+        $userId = $this->authId();
+        if ($userId) {
+            // Merge session cart to DB if any exists
+            $sessionCart = $this->session->get('cart', []);
+            $db = \App\Core\Database::connect();
+            if (!empty($sessionCart)) {
+                foreach ($sessionCart as $productId => $item) {
+                    $stmt = $db->prepare("SELECT id FROM shopping_cart WHERE user_id = :u AND product_id = :p");
+                    $stmt->execute(['u' => $userId, 'p' => $productId]);
+                    if (!$stmt->fetch()) {
+                        $stmtInsert = $db->prepare("INSERT INTO shopping_cart (user_id, product_id, quantity) VALUES (:u, :p, 1)");
+                        $stmtInsert->execute(['u' => $userId, 'p' => $productId]);
+                    }
+                }
+                $this->session->remove('cart');
+            }
+
+            // Fetch from database
+            $stmt = $db->prepare(
+                "SELECT p.id, p.name, p.price, p.type, p.creator_id
+                 FROM shopping_cart sc
+                 JOIN products p ON sc.product_id = p.id
+                 WHERE sc.user_id = :user_id"
+            );
+            $stmt->execute(['user_id' => $userId]);
+            $dbCart = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            $cart = [];
+            foreach ($dbCart as $item) {
+                $cart[$item['id']] = $item;
+            }
+            return $cart;
+        }
+
+        return $this->session->get('cart', []);
+    }
+
     public function index(): void
     {
-        $cart = $this->session->get('cart', []);
+        $cart = $this->getCart();
 
         // Calculate totals
         $subtotal = 0.00;
@@ -77,16 +116,26 @@ class CartController extends Controller
         $product = $this->productModel->findById($productId);
 
         if ($product) {
-            $cart = $this->session->get('cart', []);
-            // Simple shopping cart - only digital products, duplicate prevention
-            $cart[$productId] = [
-                'id'          => $product['id'],
-                'name'        => $product['name'],
-                'price'       => $product['price'],
-                'type'        => $product['type'],
-                'creator_id'  => $product['creator_id']
-            ];
-            $this->session->set('cart', $cart);
+            $userId = $this->authId();
+            if ($userId) {
+                $db = \App\Core\Database::connect();
+                $stmt = $db->prepare("SELECT id FROM shopping_cart WHERE user_id = :u AND product_id = :p");
+                $stmt->execute(['u' => $userId, 'p' => $productId]);
+                if (!$stmt->fetch()) {
+                    $stmtInsert = $db->prepare("INSERT INTO shopping_cart (user_id, product_id, quantity) VALUES (:u, :p, 1)");
+                    $stmtInsert->execute(['u' => $userId, 'p' => $productId]);
+                }
+            } else {
+                $cart = $this->session->get('cart', []);
+                $cart[$productId] = [
+                    'id'          => $product['id'],
+                    'name'        => $product['name'],
+                    'price'       => $product['price'],
+                    'type'        => $product['type'],
+                    'creator_id'  => $product['creator_id']
+                ];
+                $this->session->set('cart', $cart);
+            }
 
             // Log Checkout Start for Recommendation Analytics
             $refCode = $_COOKIE['referral_code'] ?? null;
@@ -115,16 +164,26 @@ class CartController extends Controller
         $product = $this->productModel->findById($productId);
 
         if ($product) {
-            $cart = $this->session->get('cart', []);
-            // Simple shopping cart - only digital products, duplicate prevention
-            $cart[$productId] = [
-                'id'          => $product['id'],
-                'name'        => $product['name'],
-                'price'       => $product['price'],
-                'type'        => $product['type'],
-                'creator_id'  => $product['creator_id']
-            ];
-            $this->session->set('cart', $cart);
+            $userId = $this->authId();
+            if ($userId) {
+                $db = \App\Core\Database::connect();
+                $stmt = $db->prepare("SELECT id FROM shopping_cart WHERE user_id = :u AND product_id = :p");
+                $stmt->execute(['u' => $userId, 'p' => $productId]);
+                if (!$stmt->fetch()) {
+                    $stmtInsert = $db->prepare("INSERT INTO shopping_cart (user_id, product_id, quantity) VALUES (:u, :p, 1)");
+                    $stmtInsert->execute(['u' => $userId, 'p' => $productId]);
+                }
+            } else {
+                $cart = $this->session->get('cart', []);
+                $cart[$productId] = [
+                    'id'          => $product['id'],
+                    'name'        => $product['name'],
+                    'price'       => $product['price'],
+                    'type'        => $product['type'],
+                    'creator_id'  => $product['creator_id']
+                ];
+                $this->session->set('cart', $cart);
+            }
 
             // Log Checkout Start for Recommendation Analytics
             $refCode = $_COOKIE['referral_code'] ?? null;
@@ -150,12 +209,20 @@ class CartController extends Controller
     {
         $this->validateCsrf();
         $productId = (int)$this->request->get('product_id', 0);
-        $cart = $this->session->get('cart', []);
+        $userId = $this->authId();
 
-        if (isset($cart[$productId])) {
-            unset($cart[$productId]);
-            $this->session->set('cart', $cart);
+        if ($userId) {
+            $db = \App\Core\Database::connect();
+            $stmt = $db->prepare("DELETE FROM shopping_cart WHERE user_id = :u AND product_id = :p");
+            $stmt->execute(['u' => $userId, 'p' => $productId]);
             $this->session->setFlash('success', 'Product removed from shopping cart.');
+        } else {
+            $cart = $this->session->get('cart', []);
+            if (isset($cart[$productId])) {
+                unset($cart[$productId]);
+                $this->session->set('cart', $cart);
+                $this->session->setFlash('success', 'Product removed from shopping cart.');
+            }
         }
 
         $this->redirect('/cart');
@@ -198,15 +265,11 @@ class CartController extends Controller
             $this->redirect('/auth/login');
         }
 
-        $cart = $this->session->get('cart', []);
+        $cart = $this->getCart();
         if (empty($cart)) {
             $this->session->setFlash('error', 'Your shopping cart is empty.');
             $this->redirect('/marketplace');
         }
-
-        // We will process the cart products sequentially.
-        // For each product, calculate discount, calculate platform fee, check referral cookies,
-        // create a completed order, and trigger the CommissionEngine.
 
         $db = \App\Core\Database::connect();
 
@@ -246,9 +309,17 @@ class CartController extends Controller
                 }
             }
 
+            // Create a unique tx_ref for Flutterwave transaction
+            $txRef = 'tx_' . bin2hex(random_bytes(10));
+
             $totalAmountPaid = 0.00;
+            $firstProductId = null;
+
             foreach ($cart as $item) {
                 $productId = (int)$item['id'];
+                if ($firstProductId === null) {
+                    $firstProductId = $productId;
+                }
                 $price = (float)$item['price'];
 
                 // Calculate final price with discounts
@@ -260,15 +331,15 @@ class CartController extends Controller
                 }
 
                 $finalAmount = max(0.00, $price - $discountApplied);
-                $totalAmountPaid += ($finalAmount + ($finalAmount * ($platformFeePercent / 100)));
-
-                // Platform fee
                 $platformFee = $finalAmount * ($platformFeePercent / 100);
 
-                // Insert into orders
+                // We add price + platform fee to total amount paid
+                $totalAmountPaid += ($finalAmount + $platformFee);
+
+                // Insert into orders with status 'pending' and associate with tx_ref
                 $stmt = $db->prepare(
-                    "INSERT INTO orders (user_id, product_id, price, discount_applied, final_amount, platform_fee, status, referrer_id, coupon_id)
-                     VALUES (:user_id, :product_id, :price, :discount_applied, :final_amount, :platform_fee, 'completed', :referrer_id, :coupon_id)"
+                    "INSERT INTO orders (user_id, product_id, price, discount_applied, final_amount, platform_fee, status, referrer_id, coupon_id, tx_ref)
+                     VALUES (:user_id, :product_id, :price, :discount_applied, :final_amount, :platform_fee, 'pending', :referrer_id, :coupon_id, :tx_ref)"
                 );
                 $stmt->execute([
                     'user_id'          => $userId,
@@ -278,74 +349,46 @@ class CartController extends Controller
                     'final_amount'     => $finalAmount,
                     'platform_fee'     => $platformFee,
                     'referrer_id'      => $referrerId,
-                    'coupon_id'        => $couponId
+                    'coupon_id'        => $couponId,
+                    'tx_ref'           => $txRef
                 ]);
-
-                $orderId = (int)$db->lastInsertId();
-
-                // Track Successful Purchase for Recommendation Analytics
-                if ($referrerId) {
-                    $refLink = $this->productModel->fetch(
-                        "SELECT id FROM referral_links WHERE user_id = :user_id AND product_id = :product_id",
-                        ['user_id' => $referrerId, 'product_id' => $productId]
-                    );
-                    if ($refLink) {
-                        $this->productModel->trackRecommendationEvent((int)$refLink['id'], 'purchase');
-                    }
-                }
-
-                // Generate system notifications & log activity
-                $buyerName = $this->authUser()['full_name'];
-                $prodName = $item['name'];
-
-                // 1. Notify Creator of the Sale
-                $creatorNotificationMsg = "Great news! Your digital product '{$prodName}' was purchased by {$buyerName} for $" . number_format($finalAmount, 2) . ".";
-                $stmtNotify = $db->prepare("INSERT INTO notifications (user_id, type, source_id, content) VALUES (:user_id, 'sale', :source_id, :content)");
-                $stmtNotify->execute([
-                    'user_id'   => $item['creator_id'],
-                    'source_id' => $orderId,
-                    'content'   => $creatorNotificationMsg
-                ]);
-
-                // 2. Notify Buyer
-                $buyerNotificationMsg = "Thank you! Your purchase of '{$prodName}' is confirmed. You can now download it instantly from your profile or the product page.";
-                $stmtNotify->execute([
-                    'user_id'   => $userId,
-                    'source_id' => $orderId,
-                    'content'   => $buyerNotificationMsg
-                ]);
-
-                // Track and credit multi-level affiliate marketing commissions
-                CommissionEngine::processOrderCommissions($orderId);
             }
-
-            // Trigger automated purchase confirmation email
-            \App\Services\Mailer::sendPurchaseConfirmation(
-                $this->authUser()['email'],
-                $this->authUser()['full_name'],
-                $cart,
-                $totalAmountPaid
-            );
-
-            // Clear Cart and Cookies
-            $this->session->remove('cart');
-            $this->session->remove('applied_coupon');
-            setcookie('referral_code', '', time() - 3600, '/');
 
             $db->commit();
 
-            // Auto unlock Sales Partner status after purchasing any digital product
-            $this->productModel->query("UPDATE users SET is_sales_partner = 1 WHERE id = :id", ['id' => $userId]);
-            $refreshedUser = $this->productModel->fetch("SELECT * FROM users WHERE id = :id", ['id' => $userId]);
-            $this->session->set('user', $refreshedUser);
+            // Initialize Flutterwave Payment via API
+            $flw = new \App\Services\Flutterwave();
+            $redirectUrl = APP_URL . '/flutterwave/callback';
 
-            $this->session->setFlash('success', 'Order completed successfully! Digital products are unlocked.');
-            $this->redirect('/profile/' . $refreshedUser['username']);
+            $meta = [
+                'user_id'     => $userId,
+                'product_id'  => $firstProductId,
+                'coupon_id'   => $couponId,
+                'referrer_id' => $referrerId,
+                'buyer_name'  => $this->authUser()['full_name']
+            ];
+
+            // Initialize standard Flutterwave payment session
+            $paymentLink = $flw->initializePayment(
+                $this->authUser()['email'],
+                $totalAmountPaid,
+                'USD',
+                $redirectUrl,
+                $meta
+            );
+
+            if ($paymentLink) {
+                $this->redirect($paymentLink);
+            } else {
+                throw new \Exception("Could not initialize Flutterwave payment link.");
+            }
 
         } catch (\Exception $e) {
-            $db->rollBack();
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
             error_log("Checkout error: " . $e->getMessage());
-            $this->session->setFlash('error', 'Checkout failed. Please try again.');
+            $this->session->setFlash('error', 'Checkout failed to initialize. Please try again.');
             $this->redirect('/cart');
         }
     }

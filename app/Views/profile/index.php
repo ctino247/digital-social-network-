@@ -10,22 +10,39 @@ $isSalesPartner = (int)$profileUser['is_sales_partner'] === 1;
 
 <div class="space-y-8">
     <!-- Cover Photo Banner -->
-    <div class="h-48 rounded-3xl border border-[#E0E6E2] relative overflow-hidden flex items-end p-6 shadow-inner" style="background: <?= !empty($profileUser['cover_url']) ? "url('" . Security::e($profileUser['cover_url']) . "') center/cover no-repeat" : "linear-gradient(to top right, #E7EDE8, #F3F4F1)" ?>;">
+    <div id="profileCoverBanner" class="h-48 rounded-3xl border border-[#E0E6E2] relative overflow-hidden flex items-end p-6 shadow-inner" style="background: <?= !empty($profileUser['cover_url']) ? "url('" . Security::e($profileUser['cover_url']) . "') center/cover no-repeat" : "linear-gradient(to top right, #E7EDE8, #F3F4F1)" ?>;">
         <?php if (empty($profileUser['cover_url'])): ?>
-            <div class="absolute right-0 top-0 w-64 h-64 bg-[#FFE500]/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div id="coverBlurBg" class="absolute right-0 top-0 w-64 h-64 bg-[#FFE500]/10 rounded-full blur-3xl pointer-events-none"></div>
         <?php endif; ?>
         <span class="px-3 py-1 bg-white/90 backdrop-blur border border-[#E0E6E2] rounded-full text-[9px] font-bold text-[#004D40] uppercase tracking-wider shadow-sm">Premium Partner space</span>
+
+        <?php if ($isOwnProfile): ?>
+            <!-- Cover Photo Upload Button -->
+            <button onclick="document.getElementById('directCoverInput').click();" class="absolute top-4 right-4 p-2 bg-white/80 hover:bg-white backdrop-blur border border-[#E0E6E2] rounded-full text-[#004D40] hover:text-[#00332A] shadow-md transition flex items-center justify-center cursor-pointer group z-10" title="Upload Cover Banner">
+                <span class="material-symbols-outlined text-sm font-bold">photo_camera</span>
+                <span class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out text-[9px] font-extrabold uppercase tracking-wider ml-0 group-hover:ml-1">Change Banner</span>
+            </button>
+            <input type="file" id="directCoverInput" accept="image/png, image/jpeg, image/jpg, image/webp" class="hidden" onchange="uploadDirectImage('cover')" />
+        <?php endif; ?>
     </div>
 
     <!-- Profile Card details (Luxury off-white overlay style with Liquid Glass effect) -->
     <div class="liquid-glass p-6 rounded-3xl relative overflow-hidden -mt-20 shadow-md">
         <div class="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-6">
-            <!-- Profile Photo/Avatar -->
-            <div class="w-24 h-24 rounded-full bg-[#004D40]/10 flex items-center justify-center text-[#004D40] text-4xl font-bold border-4 border-white shrink-0 overflow-hidden relative shadow-md">
-                <?php if (!empty($profileUser['avatar_url'])): ?>
-                    <img src="<?= Security::e($profileUser['avatar_url']) ?>" class="w-full h-full object-cover"/>
-                <?php else: ?>
-                    <?= strtoupper(substr($profileUser['username'], 0, 1)) ?>
+            <!-- Profile Photo/Avatar with direct upload overlay -->
+            <div class="relative shrink-0">
+                <div class="w-24 h-24 rounded-full bg-[#004D40]/10 flex items-center justify-center text-[#004D40] text-4xl font-bold border-4 border-white overflow-hidden shadow-md" id="avatarImgContainer">
+                    <?php if (!empty($profileUser['avatar_url'])): ?>
+                        <img src="<?= Security::e($profileUser['avatar_url']) ?>" class="w-full h-full object-cover" id="directAvatarPreviewImg"/>
+                    <?php else: ?>
+                        <span id="directAvatarText"><?= strtoupper(substr($profileUser['username'], 0, 1)) ?></span>
+                    <?php endif; ?>
+                </div>
+                <?php if ($isOwnProfile): ?>
+                    <button onclick="document.getElementById('directAvatarInput').click();" class="absolute bottom-0 right-0 p-1.5 bg-white border border-[#E0E6E2] rounded-full text-[#004D40] hover:bg-[#F5F7F4] shadow-md transition flex items-center justify-center cursor-pointer z-10" title="Upload Profile Picture">
+                        <span class="material-symbols-outlined text-xs font-extrabold">photo_camera</span>
+                    </button>
+                    <input type="file" id="directAvatarInput" accept="image/png, image/jpeg, image/jpg, image/webp" class="hidden" onchange="uploadDirectImage('avatar')" />
                 <?php endif; ?>
             </div>
 
@@ -628,8 +645,109 @@ $isSalesPartner = (int)$profileUser['is_sales_partner'] === 1;
 
         // Add active styling
         const activeBtn = document.getElementById('tab-' + tabId);
-        activeBtn.classList.add('border-[#004D40]', 'text-[#004D40]');
-        activeBtn.classList.remove('border-transparent', 'text-on-surface-variant');
+        if (activeBtn) {
+            activeBtn.classList.add('border-[#004D40]', 'text-[#004D40]');
+            activeBtn.classList.remove('border-transparent', 'text-on-surface-variant');
+        }
+    }
+
+    async function uploadDirectImage(type) {
+        const inputId = type === 'cover' ? 'directCoverInput' : 'directAvatarInput';
+        const input = document.getElementById(inputId);
+        if (!input || !input.files || !input.files[0]) return;
+
+        const file = input.files[0];
+        const token = '<?= $csrf_token ?>';
+
+        // Client side checks
+        const allowedMimes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+        if (!allowedMimes.includes(file.type)) {
+            alert('Invalid image format. Please select a PNG, JPG, JPEG, or WEBP image.');
+            input.value = '';
+            return;
+        }
+
+        if (file.size > 2 * 1024 * 1024) {
+            alert('The selected image is too large. Maximum file size allowed is 2MB.');
+            input.value = '';
+            return;
+        }
+
+        // Show loading state
+        const originalCursor = document.body.style.cursor;
+        document.body.style.cursor = 'wait';
+
+        const formData = new FormData();
+        formData.append('csrf_token', token);
+        formData.append(type, file);
+
+        const url = type === 'cover' ? '/profile/update-cover-ajax' : '/profile/update-avatar-ajax';
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-Token': token
+                },
+                body: formData
+            });
+
+            const data = await res.json();
+            document.body.style.cursor = originalCursor;
+
+            if (data.success) {
+                if (type === 'cover') {
+                    // Update cover background style
+                    const banner = document.getElementById('profileCoverBanner');
+                    if (banner) {
+                        banner.style.background = "url('" + data.url + "') center/cover no-repeat";
+                    }
+                    const blurBg = document.getElementById('coverBlurBg');
+                    if (blurBg) {
+                        blurBg.remove();
+                    }
+                } else {
+                    // Update avatar image source
+                    const container = document.getElementById('avatarImgContainer');
+                    if (container) {
+                        container.innerHTML = `<img src="${data.url}" class="w-full h-full object-cover" id="directAvatarPreviewImg"/>`;
+                    }
+
+                    // Also update global navbar avatar if present
+                    const navAvatar = document.getElementById('navbarAvatarImg');
+                    if (navAvatar) {
+                        navAvatar.src = data.url;
+                    }
+                }
+                showToastMessage('Successfully updated ' + type + ' photo!');
+            } else {
+                alert(data.error || 'An error occurred during upload.');
+            }
+        } catch (e) {
+            document.body.style.cursor = originalCursor;
+            console.error(e);
+            alert('Upload failed. Please try again.');
+        }
+
+        input.value = ''; // Reset input
+    }
+
+    function showToastMessage(message) {
+        let toast = document.getElementById('profileToast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'profileToast';
+            toast.className = 'fixed bottom-5 right-5 z-50 px-5 py-3 bg-[#004D40] text-white text-xs font-bold rounded-2xl shadow-xl flex items-center space-x-2 transition-all opacity-0 translate-y-2 duration-300';
+            document.body.appendChild(toast);
+        }
+        toast.innerHTML = `<span class="material-symbols-outlined text-sm text-[#FFE500]">check_circle</span><span>${message}</span>`;
+        toast.classList.remove('opacity-0', 'translate-y-2');
+        toast.classList.add('opacity-100', 'translate-y-0');
+
+        setTimeout(() => {
+            toast.classList.remove('opacity-100', 'translate-y-0');
+            toast.classList.add('opacity-0', 'translate-y-2');
+        }, 3000);
     }
 
     async function toggleFollow(userId) {

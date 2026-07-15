@@ -29,6 +29,8 @@ $router->get('/profile/{username}', 'ProfileController@index');
 $router->get('/profile/{username}/followers', 'ProfileController@followers');
 $router->get('/profile/{username}/following', 'ProfileController@following');
 $router->post('/profile/update', 'ProfileController@update', $auth);
+$router->post('/profile/update-avatar-ajax', 'ProfileController@updateAvatarAjax', $auth);
+$router->post('/profile/update-cover-ajax', 'ProfileController@updateCoverAjax', $auth);
 $router->post('/profile/{id}/follow', 'ProfileController@follow', $auth);
 $router->post('/profile/apply-creator', 'ProfileController@applyCreator', $auth);
 $router->post('/profile/withdraw', 'ProfileController@requestWithdrawal', $auth);
@@ -62,6 +64,7 @@ $router->post('/cart/checkout', 'CartController@checkout', $auth);
 $router->get('/flutterwave/simulate-checkout', 'FlutterwaveController@simulateCheckout');
 $router->post('/flutterwave/process-simulation', 'FlutterwaveController@processSimulation');
 $router->post('/flutterwave/webhook', 'FlutterwaveController@webhook');
+$router->get('/flutterwave/callback', 'FlutterwaveController@callback');
 
 // Message Routing (Direct Chats)
 $router->get('/messages', 'MessageController@index', $auth);

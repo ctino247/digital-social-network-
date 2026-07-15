@@ -49,18 +49,43 @@ class FlutterwaveController extends Controller
         $txRef = $this->request->get('tx_ref', '');
         $redirectUrl = $this->request->get('redirect', '');
 
+        $id = 'flw_tx_' . bin2hex(random_bytes(6));
         $db = Database::connect();
         $stmt = $db->prepare("UPDATE flutterwave_payments SET status = 'successful', transaction_id = :id WHERE tx_ref = :tx_ref");
         $stmt->execute([
-            'id'     => 'flw_tx_' . bin2hex(random_bytes(6)),
+            'id'     => $id,
             'tx_ref' => $txRef
         ]);
 
-        // Process Weber Callback programmatically to fulfill order instantly
-        $this->fulfillPayment($txRef);
+        $redirectUrlWithParams = $redirectUrl . (strpos($redirectUrl, '?') === false ? '?' : '&') . 'status=successful&tx_ref=' . urlencode($txRef) . '&transaction_id=' . urlencode($id);
+        $this->response->redirect($redirectUrlWithParams);
+    }
 
-        $this->session->setFlash('success', 'Flutterwave Payment completed successfully!');
-        $this->response->redirect($redirectUrl);
+    /**
+     * Handles standard redirect callback from Flutterwave
+     */
+    public function callback(): void
+    {
+        $status = $this->request->get('status', '');
+        $txRef = $this->request->get('tx_ref', '');
+        $transactionId = $this->request->get('transaction_id', $this->request->get('id', ''));
+
+        if ($status === 'successful' || $status === 'success') {
+            $flw = new \App\Services\Flutterwave();
+            $verified = $flw->verifyPayment($transactionId, $txRef);
+
+            if ($verified) {
+                // Fulfill order
+                $this->fulfillPayment($txRef);
+                $this->session->setFlash('success', 'Payment successful! Your order has been processed and your downloads are now available.');
+            } else {
+                $this->session->setFlash('error', 'Payment verification failed.');
+            }
+        } else {
+            $this->session->setFlash('error', 'Payment was cancelled or was not successful.');
+        }
+
+        $this->redirect('/wallet');
     }
 
     /**
@@ -68,29 +93,81 @@ class FlutterwaveController extends Controller
      */
     public function webhook(): void
     {
-        // Programmatic receipt of Flutterwave post webhooks
         $rawPayload = file_get_contents('php://input');
-        $signature = $_SERVER['HTTP_VERACE_SIGNATURE'] ?? '';
+        $signature = $_SERVER['HTTP_VERIF_HASH'] ?? '';
 
-        // Standard verification
-        if (!empty($rawPayload)) {
-            $data = json_decode($rawPayload, true);
-            $txRef = $data['data']['tx_ref'] ?? '';
-            $status = $data['data']['status'] ?? '';
+        if (empty($rawPayload)) {
+            $this->response->status(400);
+            $this->json(['error' => 'Empty payload']);
+            return;
+        }
 
-            if ($status === 'successful' && !empty($txRef)) {
-                $db = Database::connect();
-                $stmt = $db->prepare("UPDATE flutterwave_payments SET status = 'successful', transaction_id = :id WHERE tx_ref = :tx_ref");
-                $stmt->execute([
-                    'id'     => $data['data']['id'] ?? 'flw_webhook_' . rand(1000, 9999),
-                    'tx_ref' => $txRef
-                ]);
+        $data = json_decode($rawPayload, true);
+        if (!$data || !isset($data['data'])) {
+            $this->response->status(400);
+            $this->json(['error' => 'Invalid JSON']);
+            return;
+        }
 
-                $this->fulfillPayment($txRef);
+        // 1. Retrieve keys
+        $db = Database::connect();
+        $stmt = $db->query("SELECT `key`, `value` FROM system_settings WHERE `key` LIKE 'flutterwave_%'");
+        $settings = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+        $secretKey = $settings['flutterwave_secret_key'] ?? '';
+        $encryptionKey = $settings['flutterwave_encryption_key'] ?? '';
+
+        // 2. Validate webhook signature verif-hash (if configured)
+        $isMock = (strpos($secretKey, 'mock-secret-key') !== false || empty($secretKey));
+        $expectedHash = $encryptionKey ?: $secretKey;
+
+        if (!$isMock && (empty($signature) || $signature !== $expectedHash)) {
+            $this->response->status(401);
+            $this->json(['error' => 'Unauthorized signature']);
+            return;
+        }
+
+        $txRef = $data['data']['tx_ref'] ?? '';
+        $status = $data['data']['status'] ?? '';
+        $transactionId = (string)($data['data']['id'] ?? '');
+
+        if ($status === 'successful' && !empty($txRef) && !empty($transactionId)) {
+            // 3. Double-check with Flutterwave API to verify the actual amount, status, and currency
+            $flw = new \App\Services\Flutterwave();
+            if ($flw->verifyPayment($transactionId, $txRef)) {
+
+                // Fetch the pending payment record
+                $stmtPayment = $db->prepare("SELECT amount, currency FROM flutterwave_payments WHERE tx_ref = :tx_ref");
+                $stmtPayment->execute(['tx_ref' => $txRef]);
+                $payment = $stmtPayment->fetch();
+
+                if ($payment) {
+                    // Validate actual amount paid matches the expected amount
+                    $payloadAmount = (float)($data['data']['amount'] ?? 0);
+                    $payloadCurrency = $data['data']['currency'] ?? 'USD';
+                    $expectedAmount = (float)$payment['amount'];
+
+                    // Allow tiny rounding tolerance
+                    if (abs($payloadAmount - $expectedAmount) <= 0.01 && $payloadCurrency === $payment['currency']) {
+                        $stmtUpdate = $db->prepare("UPDATE flutterwave_payments SET status = 'successful', transaction_id = :id WHERE tx_ref = :tx_ref");
+                        $stmtUpdate->execute([
+                            'id'     => $transactionId,
+                            'tx_ref' => $txRef
+                        ]);
+
+                        $this->fulfillPayment($txRef);
+                        $this->json(['status' => 'success', 'message' => 'Payment fulfilled successfully']);
+                        return;
+                    } else {
+                        error_log("Webhook verification mismatch. Paid: {$payloadAmount} {$payloadCurrency}, Expected: {$expectedAmount} {$payment['currency']}");
+                    }
+                }
+            } else {
+                error_log("Webhook validation: Flutterwave API verification failed for tx_ref: {$txRef}");
             }
         }
 
-        $this->json(['status' => 'webhook processed']);
+        $this->response->status(400);
+        $this->json(['status' => 'error', 'message' => 'Invalid transaction status or verification failure']);
     }
 
     /**
@@ -106,6 +183,12 @@ class FlutterwaveController extends Controller
         $payment = $stmt->fetch();
 
         if (!$payment) return;
+
+        $userId = (int)$payment['user_id'];
+
+        // Clear database shopping cart for this user
+        $db->prepare("DELETE FROM shopping_cart WHERE user_id = :u")->execute(['u' => $userId]);
+        $this->session->remove('cart');
 
         $userId = (int)$payment['user_id'];
         $productId = (int)$payment['product_id'];

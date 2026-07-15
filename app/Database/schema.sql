@@ -396,9 +396,9 @@ INSERT INTO system_settings (`key`, `value`) VALUES
 ON DUPLICATE KEY UPDATE `key`=`key`;
 
 -- Insert default admin: username: admin, password: adminpassword (hashed)
--- Password hash for 'adminpassword' is '$2y$10$O9lZitbO/t0e5v2f3b9AjuU2U6Nco9Z7Wep8gV7qNf8Gge8K1lY/i'
+-- Password hash for 'adminpassword' is '$2y$10$1mFsueThA1JNylU.hbld.uIZA.XvEUaIkoA12s4jGIqfxLalmwBCG'
 INSERT INTO users (username, email, password_hash, full_name, role, is_verified, is_sales_partner)
-VALUES ('admin', 'admin@mimshack.com', '$2y$10$O9lZitbO/t0e5v2f3b9AjuU2U6Nco9Z7Wep8gV7qNf8Gge8K1lY/i', 'System Administrator', 'admin', 1, 1)
+VALUES ('admin', 'admin@mimshack.com', '$2y$10$1mFsueThA1JNylU.hbld.uIZA.XvEUaIkoA12s4jGIqfxLalmwBCG', 'System Administrator', 'admin', 1, 1)
 ON DUPLICATE KEY UPDATE id=id;
 
 -- Create admin wallet
