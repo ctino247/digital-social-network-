@@ -139,3 +139,59 @@ sh: 1: /usr/sbin/sendmail: not found
 [Wed Jul 15 00:59:44 2026] 127.0.0.1:48946 Accepted
 [Wed Jul 15 00:59:44 2026] 127.0.0.1:48946 [200]: GET /wallet
 [Wed Jul 15 00:59:44 2026] 127.0.0.1:48946 Closing
+[Wed Jul 15 13:58:39 2026] 127.0.0.1:57144 Accepted
+[Wed Jul 15 13:58:39 2026] 127.0.0.1:57144 [404]: HEAD /
+[Wed Jul 15 13:58:39 2026] 127.0.0.1:57144 Closing
+[Wed Jul 15 14:02:28 2026] 127.0.0.1:48086 Accepted
+[Wed Jul 15 14:02:28 2026] 127.0.0.1:48086 [200]: GET /auth/login
+[Wed Jul 15 14:02:28 2026] 127.0.0.1:48086 Closing
+[Wed Jul 15 14:06:20 2026] 127.0.0.1:33318 Accepted
+[Wed Jul 15 14:06:20 2026] 127.0.0.1:33318 [200]: GET /auth/login
+[Wed Jul 15 14:06:20 2026] 127.0.0.1:33318 Closing
+[Wed Jul 15 14:06:21 2026] 127.0.0.1:33322 Accepted
+[Wed Jul 15 14:06:21 2026] 127.0.0.1:33322 [302]: POST /auth/login
+[Wed Jul 15 14:06:21 2026] 127.0.0.1:33322 Closing
+[Wed Jul 15 14:06:21 2026] 127.0.0.1:33338 Accepted
+[Wed Jul 15 14:06:21 2026] 127.0.0.1:33338 [200]: GET /admin/dashboard
+[Wed Jul 15 14:06:21 2026] 127.0.0.1:33338 Closing
+[Wed Jul 15 14:06:23 2026] 127.0.0.1:33344 Accepted
+[Wed Jul 15 14:06:23 2026] PHP Fatal error:  Uncaught ErrorException: http_response_code(): Cannot set response code - headers already sent (output started at /app/app/Views/partials/header.php:12) in /app/app/Core/ErrorHandler.php:22
+Stack trace:
+#0 [internal function]: App\Core\ErrorHandler::handleError()
+#1 /app/app/Core/ErrorHandler.php(22): http_response_code()
+#2 [internal function]: App\Core\ErrorHandler::handleException()
+#3 {main}
+  thrown in /app/app/Core/ErrorHandler.php on line 22
+[Wed Jul 15 14:06:23 2026] 127.0.0.1:33344 [200]: GET /profile/admin - Uncaught ErrorException: http_response_code(): Cannot set response code - headers already sent (output started at /app/app/Views/partials/header.php:12) in /app/app/Core/ErrorHandler.php:22
+Stack trace:
+#0 [internal function]: App\Core\ErrorHandler::handleError()
+#1 /app/app/Core/ErrorHandler.php(22): http_response_code()
+#2 [internal function]: App\Core\ErrorHandler::handleException()
+#3 {main}
+  thrown in /app/app/Core/ErrorHandler.php on line 22
+[Wed Jul 15 14:06:23 2026] 127.0.0.1:33344 Closing
+[Wed Jul 15 14:09:50 2026] 127.0.0.1:43160 Accepted
+[Wed Jul 15 14:09:50 2026] 127.0.0.1:43160 [200]: GET /auth/login
+[Wed Jul 15 14:09:50 2026] 127.0.0.1:43160 Closing
+[Wed Jul 15 14:09:51 2026] 127.0.0.1:43164 Accepted
+[Wed Jul 15 14:09:52 2026] 127.0.0.1:43164 [302]: POST /auth/login
+[Wed Jul 15 14:09:52 2026] 127.0.0.1:43164 Closing
+[Wed Jul 15 14:09:52 2026] 127.0.0.1:43168 Accepted
+[Wed Jul 15 14:09:52 2026] 127.0.0.1:43168 [200]: GET /admin/dashboard
+[Wed Jul 15 14:09:52 2026] 127.0.0.1:43168 Closing
+[Wed Jul 15 14:09:53 2026] 127.0.0.1:43170 Accepted
+[Wed Jul 15 14:09:53 2026] PHP Fatal error:  Uncaught ErrorException: http_response_code(): Cannot set response code - headers already sent (output started at /app/app/Views/partials/header.php:12) in /app/app/Core/ErrorHandler.php:22
+Stack trace:
+#0 [internal function]: App\Core\ErrorHandler::handleError()
+#1 /app/app/Core/ErrorHandler.php(22): http_response_code()
+#2 [internal function]: App\Core\ErrorHandler::handleException()
+#3 {main}
+  thrown in /app/app/Core/ErrorHandler.php on line 22
+[Wed Jul 15 14:09:53 2026] 127.0.0.1:43170 [200]: GET /profile/admin - Uncaught ErrorException: http_response_code(): Cannot set response code - headers already sent (output started at /app/app/Views/partials/header.php:12) in /app/app/Core/ErrorHandler.php:22
+Stack trace:
+#0 [internal function]: App\Core\ErrorHandler::handleError()
+#1 /app/app/Core/ErrorHandler.php(22): http_response_code()
+#2 [internal function]: App\Core\ErrorHandler::handleException()
+#3 {main}
+  thrown in /app/app/Core/ErrorHandler.php on line 22
+[Wed Jul 15 14:09:53 2026] 127.0.0.1:43170 Closing
