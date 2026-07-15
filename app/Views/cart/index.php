@@ -101,7 +101,7 @@ $platformFeePercent = (float)($settings['platform_fee_percent'] ?? 5.00);
                                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>"/>
                                 <button type="submit" class="w-full py-3.5 bg-[#004D40] text-white font-bold rounded-full hover:bg-[#00332A] transition-all flex justify-center items-center space-x-2 text-xs shadow-md">
                                     <span class="material-symbols-outlined text-sm font-bold">payment</span>
-                                    <span>Simulate Checkout</span>
+                                    <span>Checkout</span>
                                 </button>
                             </form>
                         <?php else: ?>
