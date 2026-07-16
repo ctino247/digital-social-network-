@@ -59,7 +59,7 @@ $privacyPref = json_decode($profileUser['privacy_settings'] ?? '', true) ?: [];
 
                 <div>
                     <label for="edit_bio" class="block text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1.5">Bio</label>
-                    <textarea id="edit_bio" name="bio" rows="3" class="w-full px-4 py-3 bg-[#FBFBF9] border border-[#E0E6E2] rounded-2xl text-on-background focus:border-[#004D40] focus:ring-1 focus:ring-[#004D40] outline-none text-xs leading-relaxed font-bold shadow-sm"><?= Security::e($profileUser['bio']) ?></textarea>
+                    <textarea id="edit_bio" name="bio" rows="3" class="w-full px-4 py-3 bg-[#FBFBF9] border border-[#E0E6E2] rounded-2xl text-on-background focus:border-[#004D40] focus:ring-1 focus:ring-[#004D40] outline-none text-xs leading-relaxed font-bold shadow-sm"><?= Security::e($profileUser['bio'] ?? '') ?></textarea>
                 </div>
             </div>
 
