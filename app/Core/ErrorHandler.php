@@ -19,7 +19,9 @@ class ErrorHandler
     public static function handleException(\Throwable $exception): void
     {
         $code = $exception->getCode() ?: 500;
-        http_response_code($code);
+        if (!headers_sent()) {
+            http_response_code(is_numeric($code) && $code >= 100 && $code < 600 ? $code : 500);
+        }
 
         // Log the exception
         error_log($exception->getMessage() . "\n" . $exception->getTraceAsString());

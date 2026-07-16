@@ -25,9 +25,12 @@ $router->get('/auth/reset-password', 'AuthController@resetPassword', $guest);
 $router->post('/auth/reset-password', 'AuthController@handleResetPassword', $guest);
 
 // Profile Routing
+$router->get('/profile/settings', 'ProfileController@settings', $auth);
+$router->get('/profile/apply-creator', 'ProfileController@getApplyCreator', $auth);
 $router->get('/profile/{username}', 'ProfileController@index');
 $router->get('/profile/{username}/followers', 'ProfileController@followers');
 $router->get('/profile/{username}/following', 'ProfileController@following');
+$router->get('/profile/{username}/recommendations', 'ProfileController@recommendations');
 $router->post('/profile/update', 'ProfileController@update', $auth);
 $router->post('/profile/update-avatar-ajax', 'ProfileController@updateAvatarAjax', $auth);
 $router->post('/profile/update-cover-ajax', 'ProfileController@updateCoverAjax', $auth);

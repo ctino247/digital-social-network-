@@ -13,6 +13,14 @@ CREATE TABLE IF NOT EXISTS users (
     full_name VARCHAR(100) NOT NULL,
     bio TEXT,
     avatar_url VARCHAR(255) DEFAULT NULL,
+    cover_url VARCHAR(255) DEFAULT NULL,
+    website VARCHAR(255) DEFAULT NULL,
+    occupation VARCHAR(100) DEFAULT NULL,
+    country VARCHAR(100) DEFAULT NULL,
+    social_links TEXT DEFAULT NULL,
+    email_preferences TEXT DEFAULT NULL,
+    notification_settings TEXT DEFAULT NULL,
+    privacy_settings TEXT DEFAULT NULL,
     role ENUM('member', 'creator', 'admin') NOT NULL DEFAULT 'member',
     is_verified TINYINT(1) NOT NULL DEFAULT 0,
     is_sales_partner TINYINT(1) NOT NULL DEFAULT 0,
@@ -363,6 +371,19 @@ CREATE TABLE IF NOT EXISTS flutterwave_payments (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE SET NULL,
     FOREIGN KEY (referrer_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 28. Shopping Cart Table
+CREATE TABLE IF NOT EXISTS shopping_cart (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    UNIQUE KEY uniq_user_product (user_id, product_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 

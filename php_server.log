@@ -195,3 +195,54 @@ Stack trace:
 #3 {main}
   thrown in /app/app/Core/ErrorHandler.php on line 22
 [Wed Jul 15 14:09:53 2026] 127.0.0.1:43170 Closing
+[Thu Jul 16 02:10:56 2026] 127.0.0.1:58854 Accepted
+[Thu Jul 16 02:10:57 2026] 127.0.0.1:58854 [200]: GET /auth/login
+[Thu Jul 16 02:10:57 2026] 127.0.0.1:58854 Closing
+[Thu Jul 16 02:10:59 2026] 127.0.0.1:58864 Accepted
+[Thu Jul 16 02:10:59 2026] 127.0.0.1:58864 [302]: POST /auth/login
+[Thu Jul 16 02:10:59 2026] 127.0.0.1:58864 Closing
+[Thu Jul 16 02:10:59 2026] 127.0.0.1:58874 Accepted
+[Thu Jul 16 02:10:59 2026] 127.0.0.1:58874 [200]: GET /admin/dashboard
+[Thu Jul 16 02:10:59 2026] 127.0.0.1:58874 Closing
+[Thu Jul 16 02:11:00 2026] 127.0.0.1:58886 Accepted
+[Thu Jul 16 02:11:00 2026] 127.0.0.1:58886 [200]: GET /profile/admin
+[Thu Jul 16 02:11:00 2026] 127.0.0.1:58886 Closing
+[Thu Jul 16 02:11:03 2026] 127.0.0.1:51990 Accepted
+[Thu Jul 16 02:11:03 2026] PHP Fatal error:  Uncaught ErrorException: http_response_code(): Cannot set response code - headers already sent (output started at /app/app/Views/partials/header.php:12) in /app/app/Core/ErrorHandler.php:22
+Stack trace:
+#0 [internal function]: App\Core\ErrorHandler::handleError()
+#1 /app/app/Core/ErrorHandler.php(22): http_response_code()
+#2 [internal function]: App\Core\ErrorHandler::handleException()
+#3 {main}
+  thrown in /app/app/Core/ErrorHandler.php on line 22
+[Thu Jul 16 02:11:03 2026] 127.0.0.1:51990 [200]: GET /profile/settings - Uncaught ErrorException: http_response_code(): Cannot set response code - headers already sent (output started at /app/app/Views/partials/header.php:12) in /app/app/Core/ErrorHandler.php:22
+Stack trace:
+#0 [internal function]: App\Core\ErrorHandler::handleError()
+#1 /app/app/Core/ErrorHandler.php(22): http_response_code()
+#2 [internal function]: App\Core\ErrorHandler::handleException()
+#3 {main}
+  thrown in /app/app/Core/ErrorHandler.php on line 22
+[Thu Jul 16 02:11:03 2026] 127.0.0.1:51990 Closing
+[Thu Jul 16 02:35:17 2026] 127.0.0.1:34842 Accepted
+[Thu Jul 16 02:35:17 2026] 127.0.0.1:34842 [200]: GET /auth/login
+[Thu Jul 16 02:35:17 2026] 127.0.0.1:34842 Closing
+[Thu Jul 16 02:35:18 2026] 127.0.0.1:34854 Accepted
+[Thu Jul 16 02:35:18 2026] 127.0.0.1:34854 [302]: POST /auth/login
+[Thu Jul 16 02:35:18 2026] 127.0.0.1:34854 Closing
+[Thu Jul 16 02:35:18 2026] 127.0.0.1:34862 Accepted
+[Thu Jul 16 02:35:18 2026] 127.0.0.1:34862 [200]: GET /admin/dashboard
+[Thu Jul 16 02:35:18 2026] 127.0.0.1:34862 Closing
+[Thu Jul 16 02:35:20 2026] 127.0.0.1:34864 Accepted
+[Thu Jul 16 02:35:20 2026] 127.0.0.1:34864 [200]: GET /profile/admin
+[Thu Jul 16 02:35:20 2026] 127.0.0.1:34864 Closing
+[Thu Jul 16 02:35:23 2026] 127.0.0.1:55544 Accepted
+[Thu Jul 16 02:35:23 2026] App\Core\Security::e(): Argument #1 ($value) must be of type string, null given, called in /app/app/Views/profile/settings.php on line 62
+#0 /app/app/Views/profile/settings.php(62): App\Core\Security::e()
+#1 /app/app/Core/Controller.php(31): include_once('...')
+#2 /app/app/Controllers/ProfileController.php(804): App\Core\Controller->view()
+#3 [internal function]: App\Controllers\ProfileController->settings()
+#4 /app/app/Core/Router.php(73): call_user_func_array()
+#5 /app/public/index.php(49): App\Core\Router->resolve()
+#6 {main}
+[Thu Jul 16 02:35:23 2026] 127.0.0.1:55544 [200]: GET /profile/settings
+[Thu Jul 16 02:35:23 2026] 127.0.0.1:55544 Closing

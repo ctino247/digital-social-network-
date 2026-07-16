@@ -17,7 +17,7 @@
         initFollow();
         initUploads();
         initPostInteractions();
-        initSettingsValidation();
+        initProfileMenu();
     }
 
     // Safe initialization check
@@ -28,7 +28,7 @@
     }
 
     /**
-     * 1. Brand New Tab System
+     * 1. Brand New Tab System (Simplified for Posts, Products, Recommendations)
      */
     function initTabs() {
         const container = document.getElementById('profileTabsContainer');
@@ -99,7 +99,30 @@
     }
 
     /**
-     * 2. Reusable AJAX Image Upload
+     * 2. Profile Menu Dropdown Toggle Handler
+     */
+    function initProfileMenu() {
+        const trigger = document.getElementById('profileMenuTriggerBtn');
+        const panel = document.getElementById('profileMenuPanel');
+        const container = document.getElementById('profileMenuDropdownContainer');
+
+        if (!trigger || !panel) return;
+
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            panel.classList.toggle('hidden');
+        });
+
+        // Close when clicking outside
+        document.addEventListener('click', (e) => {
+            if (container && !container.contains(e.target)) {
+                panel.classList.add('hidden');
+            }
+        });
+    }
+
+    /**
+     * 3. Reusable AJAX Image Upload from Header Camera buttons
      */
     function initUploads() {
         // Direct Header uploads
@@ -107,12 +130,6 @@
         const changeCoverBtn = document.getElementById('changeCoverBtn');
         const avatarInput = document.getElementById('directAvatarInput');
         const changeAvatarBtn = document.getElementById('changeAvatarBtn');
-
-        // Settings Form file inputs
-        const settingsAvatarInput = document.getElementById('avatarInput');
-        const settingsAvatarPreview = document.getElementById('avatarPreview');
-        const settingsCoverInput = document.getElementById('coverInput');
-        const settingsCoverPreview = document.getElementById('coverPreview');
 
         if (changeCoverBtn && coverInput) {
             changeCoverBtn.addEventListener('click', () => coverInput.click());
@@ -146,19 +163,6 @@
                     const navAvatar = document.getElementById('navbarAvatarImg');
                     if (navAvatar) navAvatar.src = url;
                 });
-            });
-        }
-
-        // Handlers for Settings form live file selection previews
-        if (settingsAvatarInput) {
-            settingsAvatarInput.addEventListener('change', () => {
-                validateAndPreviewLocalFile(settingsAvatarInput, settingsAvatarPreview);
-            });
-        }
-
-        if (settingsCoverInput) {
-            settingsCoverInput.addEventListener('change', () => {
-                validateAndPreviewLocalFile(settingsCoverInput, settingsCoverPreview);
             });
         }
     }
@@ -215,37 +219,7 @@
     }
 
     /**
-     * Generates an instantaneous client-side FileReader preview
-     */
-    function validateAndPreviewLocalFile(input, previewImgElement) {
-        if (!input || !input.files || !input.files[0]) return;
-        const file = input.files[0];
-        hideClientSettingsError();
-
-        const allowedMimes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
-        if (!allowedMimes.includes(file.type)) {
-            showClientSettingsError('Invalid image format. Please select a PNG, JPG, JPEG, or WEBP image.');
-            input.value = '';
-            return;
-        }
-
-        if (file.size > 2 * 1024 * 1024) {
-            showClientSettingsError('The selected image is too large. Maximum file size allowed is 2MB.');
-            input.value = '';
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            if (previewImgElement) {
-                previewImgElement.src = e.target.result;
-            }
-        };
-        reader.readAsDataURL(file);
-    }
-
-    /**
-     * 3. Follow / Unfollow Toggles
+     * 4. Follow / Unfollow Toggles
      */
     function initFollow() {
         const followBtn = document.getElementById('follow-btn');
@@ -289,7 +263,7 @@
     }
 
     /**
-     * 4. Likes & Bookmarks using event delegation
+     * 5. Likes & Bookmarks using event delegation
      */
     function initPostInteractions() {
         document.body.addEventListener('click', async (e) => {
@@ -356,55 +330,6 @@
                 }
             }
         });
-    }
-
-    /**
-     * 5. Settings Form Passwords Validation
-     */
-    function initSettingsValidation() {
-        const settingsForm = document.getElementById('settingsForm');
-        if (!settingsForm) return;
-
-        settingsForm.addEventListener('submit', (e) => {
-            const newPwd = document.getElementById('new_password');
-            const confirmPwd = document.getElementById('confirm_password');
-            const oldPwd = document.getElementById('old_password');
-
-            if (newPwd && newPwd.value.trim() !== '') {
-                if (!oldPwd || oldPwd.value.trim() === '') {
-                    e.preventDefault();
-                    showClientSettingsError('Please enter your current password to authorize changing passwords.');
-                    return;
-                }
-                if (newPwd.value.length < 6) {
-                    e.preventDefault();
-                    showClientSettingsError('Your new password must be at least 6 characters long.');
-                    return;
-                }
-                if (newPwd.value !== confirmPwd.value) {
-                    e.preventDefault();
-                    showClientSettingsError('Your new password and confirmation password do not match.');
-                    return;
-                }
-            }
-        });
-    }
-
-    function showClientSettingsError(msg) {
-        const errorBanner = document.getElementById('clientErrorBanner');
-        const errorMessage = document.getElementById('clientErrorMessage');
-        if (errorBanner && errorMessage) {
-            errorMessage.innerText = msg;
-            errorBanner.classList.remove('hidden');
-            errorBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    }
-
-    function hideClientSettingsError() {
-        const errorBanner = document.getElementById('clientErrorBanner');
-        if (errorBanner) {
-            errorBanner.classList.add('hidden');
-        }
     }
 
     /**

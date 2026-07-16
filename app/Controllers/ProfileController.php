@@ -788,4 +788,104 @@ class ProfileController extends Controller
             'csrf_token'             => $this->session->generateCsrfToken()
         ]);
     }
+
+    /**
+     * Render the standalone Edit Profile & Preferences Page
+     */
+    public function settings(): void
+    {
+        $userId = $this->authId();
+        if (!$userId) {
+            $this->redirect('/auth/login');
+        }
+
+        $profileUser = $this->userModel->findById($userId);
+
+        $this->view('profile.settings', [
+            'profileUser'  => $profileUser,
+            'isOwnProfile' => true,
+            'csrf_token'   => $this->session->generateCsrfToken()
+        ]);
+    }
+
+    /**
+     * Render the standalone Join Creator Program Page
+     */
+    public function getApplyCreator(): void
+    {
+        $userId = $this->authId();
+        if (!$userId) {
+            $this->redirect('/auth/login');
+        }
+
+        $profileUser = $this->userModel->findById($userId);
+
+        $creatorApplication = $this->userModel->fetch(
+            "SELECT * FROM creator_applications WHERE user_id = :user_id",
+            ['user_id' => $userId]
+        );
+
+        $this->view('profile.creator', [
+            'profileUser'        => $profileUser,
+            'creatorApplication' => $creatorApplication,
+            'isOwnProfile'       => true,
+            'csrf_token'         => $this->session->generateCsrfToken()
+        ]);
+    }
+
+    /**
+     * Render the standalone Recommendations Page
+     */
+    public function recommendations(string $username): void
+    {
+        $profileUser = $this->userModel->findByUsername($username);
+        if (!$profileUser) {
+            $this->response->setStatusCode(404);
+            die("User @{$username} not found.");
+        }
+
+        $currentUserId = $this->authId();
+        $isOwnProfile = ($currentUserId === (int)$profileUser['id']);
+
+        // Fetch recommended products
+        $recommendedProducts = $this->userModel->fetchAll(
+            "SELECT p.*, c.name as category_name, u.username as creator_username
+             FROM referral_links r
+             JOIN products p ON r.product_id = p.id
+             JOIN categories c ON p.category_id = c.id
+             JOIN users u ON p.creator_id = u.id
+             WHERE r.user_id = :user_id AND p.status = 'active'
+             ORDER BY r.created_at DESC",
+            ['user_id' => $profileUser['id']]
+        );
+
+        // Fetch recommendation social feed
+        $recommendationFeed = $this->userModel->fetchAll(
+            "SELECT p.*, u.username, u.full_name, u.avatar_url,
+                    (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likes_count,
+                    (SELECT COUNT(*) FROM posts WHERE parent_id = p.id) as replies_count,
+                    (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id AND user_id = :curr1) as is_liked,
+                    (SELECT COUNT(*) FROM post_bookmarks WHERE post_id = p.id AND user_id = :curr2) as is_bookmarked
+             FROM posts p
+             JOIN users u ON p.user_id = u.id
+             WHERE p.user_id = :user_id AND p.product_id IS NOT NULL AND p.parent_id IS NULL
+             ORDER BY p.created_at DESC",
+            [
+                'curr1'   => $currentUserId ?? 0,
+                'curr2'   => $currentUserId ?? 0,
+                'user_id' => $profileUser['id']
+            ]
+        );
+        foreach ($recommendationFeed as &$recPost) {
+            $recPost['product'] = (new \App\Models\Post())->getProductCardDetails((int)$recPost['product_id']);
+        }
+
+        $this->view('profile.recommendations', [
+            'profileUser'         => $profileUser,
+            'isOwnProfile'        => $isOwnProfile,
+            'recommendedProducts' => $recommendedProducts,
+            'recommendationFeed'  => $recommendationFeed,
+            'csrf_token'          => $this->session->generateCsrfToken()
+        ]);
+    }
 }

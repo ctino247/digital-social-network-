@@ -20,7 +20,7 @@ include ROOT_PATH . '/app/Views/partials/header.php';
 </div>
 
 <div class="space-y-8">
-    <!-- 1. Header (Banner, Avatar, Badges, Follow Actions) -->
+    <!-- 1. Header (Banner, Avatar, Badges, Follow Actions, Menu Button) -->
     <?php include __DIR__ . '/header.php'; ?>
 
     <!-- 2. Navigation Tabs (data-tab handlers) -->
@@ -32,28 +32,14 @@ include ROOT_PATH . '/app/Views/partials/header.php';
     <?php include __DIR__ . '/sections/posts.php'; ?>
 
     <!-- Products Tab Panel -->
-    <?php include __DIR__ . '/sections/products.php'; ?>
+    <?php if (in_array($profileUser['role'], ['creator', 'admin'])): ?>
+        <?php include __DIR__ . '/sections/products.php'; ?>
+    <?php endif; ?>
 
     <!-- Recommendations Tab Panel -->
-    <?php include __DIR__ . '/sections/recommendations.php'; ?>
-
-    <!-- About Creator Tab Panel -->
-    <?php include __DIR__ . '/sections/about.php'; ?>
-
-    <!-- Followers Tab Panel -->
-    <?php include __DIR__ . '/sections/followers.php'; ?>
-
-    <!-- Following Tab Panel -->
-    <?php include __DIR__ . '/sections/following.php'; ?>
-
-    <!-- Wallet Tab Panel -->
-    <?php include __DIR__ . '/sections/wallet.php'; ?>
-
-    <!-- Apply Creator Tab Panel -->
-    <?php include __DIR__ . '/sections/creator.php'; ?>
-
-    <!-- Settings Tab Panel -->
-    <?php include __DIR__ . '/sections/settings.php'; ?>
+    <?php if ((int)$profileUser['is_sales_partner'] === 1 || in_array($profileUser['role'], ['creator', 'admin'])): ?>
+        <?php include __DIR__ . '/sections/recommendations.php'; ?>
+    <?php endif; ?>
 
 </div>
 
