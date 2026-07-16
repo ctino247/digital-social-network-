@@ -10,7 +10,16 @@ class Session
     {
         if (session_status() === PHP_SESSION_NONE) {
             ini_set('session.cookie_httponly', '1');
-            ini_set('session.cookie_secure', isset($_SERVER['HTTPS']) ? '1' : '0');
+
+            // Bulletproof HTTPS check to avoid cookie_secure over HTTP connections (e.g. behind proxies)
+            $isSecure = false;
+            if (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') {
+                $isSecure = true;
+            } elseif (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') {
+                $isSecure = true;
+            }
+
+            ini_set('session.cookie_secure', $isSecure ? '1' : '0');
             ini_set('session.use_only_cookies', '1');
             session_start();
         }
