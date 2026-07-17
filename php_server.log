@@ -246,3 +246,48 @@ Stack trace:
 #6 {main}
 [Thu Jul 16 02:35:23 2026] 127.0.0.1:55544 [200]: GET /profile/settings
 [Thu Jul 16 02:35:23 2026] 127.0.0.1:55544 Closing
+[Fri Jul 17 02:52:22 2026] 127.0.0.1:59264 Accepted
+[Fri Jul 17 02:52:22 2026] 127.0.0.1:59264 [404]: HEAD /
+[Fri Jul 17 02:52:22 2026] 127.0.0.1:59264 Closing
+[Fri Jul 17 02:54:11 2026] 127.0.0.1:52194 Accepted
+[Fri Jul 17 02:54:11 2026] 127.0.0.1:52194 [200]: GET /
+[Fri Jul 17 02:54:11 2026] 127.0.0.1:52194 Closing
+[Fri Jul 17 02:56:21 2026] 127.0.0.1:44444 Accepted
+[Fri Jul 17 02:56:21 2026] 127.0.0.1:44444 [200]: GET /auth/login
+[Fri Jul 17 02:56:21 2026] 127.0.0.1:44444 Closing
+[Fri Jul 17 03:16:34 2026] 127.0.0.1:37394 Accepted
+[Fri Jul 17 03:16:34 2026] 127.0.0.1:37394 [200]: GET /auth/login
+[Fri Jul 17 03:16:34 2026] 127.0.0.1:37394 Closing
+[Fri Jul 17 03:16:36 2026] 127.0.0.1:37396 Accepted
+[Fri Jul 17 03:16:36 2026] 127.0.0.1:37396 [302]: POST /auth/login
+[Fri Jul 17 03:16:36 2026] 127.0.0.1:37396 Closing
+[Fri Jul 17 03:16:36 2026] 127.0.0.1:37400 Accepted
+[Fri Jul 17 03:16:36 2026] 127.0.0.1:37400 [200]: GET /admin/dashboard
+[Fri Jul 17 03:16:36 2026] 127.0.0.1:37400 Closing
+[Fri Jul 17 03:16:39 2026] 127.0.0.1:37412 Accepted
+[Fri Jul 17 03:16:39 2026] 127.0.0.1:37412 [200]: GET /product/ai-prompts-pro-packet
+[Fri Jul 17 03:16:39 2026] 127.0.0.1:37412 Closing
+[Fri Jul 17 03:33:20 2026] 127.0.0.1:55348 Accepted
+[Fri Jul 17 03:33:20 2026] 127.0.0.1:55348 [200]: GET /auth/login
+[Fri Jul 17 03:33:20 2026] 127.0.0.1:55348 Closing
+[Fri Jul 17 03:33:22 2026] 127.0.0.1:42178 Accepted
+[Fri Jul 17 03:33:22 2026] 127.0.0.1:42178 [302]: POST /auth/login
+[Fri Jul 17 03:33:22 2026] 127.0.0.1:42178 Closing
+[Fri Jul 17 03:33:22 2026] 127.0.0.1:42190 Accepted
+[Fri Jul 17 03:33:22 2026] 127.0.0.1:42190 [200]: GET /admin/dashboard
+[Fri Jul 17 03:33:22 2026] 127.0.0.1:42190 Closing
+[Fri Jul 17 03:33:24 2026] 127.0.0.1:42198 Accepted
+[Fri Jul 17 03:33:24 2026] 127.0.0.1:42198 [200]: GET /product/ai-prompts-pro-packet
+[Fri Jul 17 03:33:24 2026] 127.0.0.1:42198 Closing
+[Fri Jul 17 03:33:26 2026] 127.0.0.1:42212 Accepted
+[Fri Jul 17 03:33:26 2026] 127.0.0.1:42212 [302]: POST /cart/add
+[Fri Jul 17 03:33:26 2026] 127.0.0.1:42212 Closing
+[Fri Jul 17 03:33:26 2026] 127.0.0.1:42220 Accepted
+[Fri Jul 17 03:33:26 2026] 127.0.0.1:42220 [200]: GET /cart
+[Fri Jul 17 03:33:26 2026] 127.0.0.1:42220 Closing
+[Fri Jul 17 03:33:28 2026] 127.0.0.1:42234 Accepted
+[Fri Jul 17 03:33:28 2026] 127.0.0.1:42234 [302]: POST /cart/checkout
+[Fri Jul 17 03:33:28 2026] 127.0.0.1:42234 Closing
+[Fri Jul 17 03:33:28 2026] 127.0.0.1:42246 Accepted
+[Fri Jul 17 03:33:28 2026] 127.0.0.1:42246 [200]: GET /flutterwave/simulate-checkout?tx_ref=tx_31247f185361acc8a9fd&redirect=http%3A%2F%2Flocalhost%3A8000%2Fflutterwave%2Fcallback
+[Fri Jul 17 03:33:28 2026] 127.0.0.1:42246 Closing
